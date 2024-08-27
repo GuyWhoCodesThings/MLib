@@ -8,11 +8,11 @@ OBJ_DIR = ./obj
 LIB_DIR = ./lib
 
 # Source files
-SRCS = $(SRC_DIR)/matrix.c
-OBJS = $(OBJ_DIR)/matrix.o
+SRCS = $(SRC_DIR)/marray.c
+OBJS = $(OBJ_DIR)/marray.o
 
 # Shared library
-LIB_NAME = libmatrix.so
+LIB_NAME = libmarray.so
 
 # Target for the shared library
 $(LIB_DIR)/$(LIB_NAME): $(OBJS)

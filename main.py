@@ -1,6 +1,10 @@
-from matrix import Matrix, CMatrix
+from marray import Marray, CMarray
 
-a =  Matrix([[1,2,3]])
-b =  Matrix([[4,5,6]])
+a = Marray([[1,1],[1,1],[1,1]])
+
 print(a)
+b = a.T
 print(b)
+
+
+
