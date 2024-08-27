@@ -2,7 +2,7 @@ import ctypes
 import os
 import grad
 
-PATH_TO_LIB = "./lib/libmatrix.so"
+PATH_TO_LIB = "./lib"
 
 class CMatrix(ctypes.Structure):
     _fields_ = [
@@ -13,7 +13,7 @@ class CMatrix(ctypes.Structure):
 
 class Matrix:
     os.path.abspath(os.curdir)
-    _C = ctypes.CDLL(PATH_TO_LIB)
+    _C = ctypes.CDLL(PATH_TO_LIB + "/libmatrix.so")
 
     def __init__(self, data=None, req_grad=True):
 
@@ -41,7 +41,7 @@ class Matrix:
                 self._rows_ctype,
                 self._cols_ctype
             )
-            
+
     def flatten(self, data):
         if isinstance(data[0], list):
             flat = []
