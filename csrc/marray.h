@@ -9,8 +9,6 @@ typedef struct {
    int* strides;
    int ndim;
    int size;
-   // size in bytes
-   // dtype size
 } Marray;
 
 Marray* create_marray(float* storage, int* shape, int ndim);

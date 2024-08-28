@@ -18,17 +18,16 @@ class Marray:
     os.path.abspath(os.curdir)
     _C = ctypes.CDLL(PATH_TO_LIB + "/libmarray.so")
 
-    def __init__(self, data=None, req_grad=True, owns_data=False):
+    def __init__(self, data=None, children=None, req_grad=True):
 
         self.marray = None
         self.grad = None
         self.grad_fn = None
-        self.children = None
+        self.children = children
         self.grad_fn_name = "" 
         self.shape = None
         self.ndim = None
         self.req_grad = req_grad
-        self.owns_data = owns_data
 
         if isinstance(data, (int, float)):
             data = [data]
@@ -63,7 +62,8 @@ class Marray:
     def __del__(self):
         if hasattr(self, 'data_ctype') and self.data_ctype is not None:
 
-            if self.owns_data:
+            # python manages the matrix storage (data) and shape if it doesn't have children
+            if self.children:
                 Marray._C.delete_storage.argtypes = [ctypes.POINTER(CMarray)]
                 Marray._C.delete_storage.restype = None
                 Marray._C.delete_storage(self.marray)
@@ -95,7 +95,7 @@ class Marray:
     
     def __str__(self):
         if not self.marray:
-            return
+            return ""
         
         res = "Marray(["
         if self.ndim == 1:
@@ -118,7 +118,7 @@ class Marray:
         Marray._C.elem_add_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
         Marray._C.elem_add_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.elem_add_marray(self.marray, other.marray)
-        marray = Marray(owns_data=True)
+        marray = Marray(children=True)
         marray.marray = data
         marray.ndim = self.ndim
         marray.shape = self.shape
@@ -129,7 +129,7 @@ class Marray:
     
     def __mul__(self, other):
 
-        res = Marray(owns_data=True)
+        res = Marray(children=True)
         if isinstance(other, (int, float)):
             #handle scalar
             other = ctypes.c_float(other)
@@ -154,9 +154,9 @@ class Marray:
         Marray._C.matmul_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
         Marray._C.matmul_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.matmul_marray(self.marray, other.marray)
-        res = Marray(owns_data=True)
+        res =Marray(children=True)
         res.marray = data
-        res.shape = self.shape
+        res.shape = [self.shape[0], other.shape[1]]
         res.ndim = self.ndim
         return res
     
@@ -164,7 +164,7 @@ class Marray:
         Marray._C.zeros_like.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.zeros_like.restype = ctypes.POINTER(CMarray)
         data = Marray._C.zeros_like(self.marray)
-        res = Marray(owns_data=True)
+        res = Marray(children=True)
         res.marray = data
         res.shape = self.shape
         res.ndim = self.ndim
@@ -174,7 +174,7 @@ class Marray:
         Marray._C.ones_like.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.ones_like.restype = ctypes.POINTER(CMarray)
         data = Marray._C.ones_like(self.marray)
-        res = Marray(owns_data=True)
+        res = Marray(children=True)
         res.marray = data
         res.shape = self.shape
         res.ndim = self.ndim
@@ -184,7 +184,7 @@ class Marray:
         Marray._C.flatten_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.flatten_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.flatten_marray(self.marray)
-        res = Marray(owns_data=True)
+        res = Marray(children=True)
         res.marray = data
         res.shape = [scal_prod(self.shape)]
         res.ndim = 1
@@ -194,7 +194,7 @@ class Marray:
         Marray._C.squeeze_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.squeeze_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.squeeze_marray(self.marray)
-        res = Marray(owns_data=True)
+        res = Marray(children=True)
         res.marray = data
         res.shape = [max(self.shape)]
         res.ndim = 1
@@ -204,7 +204,7 @@ class Marray:
         Marray._C.unsqueeze_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.unsqueeze_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.unsqueeze_marray(self.marray)
-        res = Marray(owns_data=True)
+        res = Marray(children=True)
         res.marray = data
         res.shape = [1] + self.shape
         res.ndim = len(res.shape)
@@ -218,7 +218,7 @@ class Marray:
         Marray._C.transpose.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.transpose.restype = ctypes.POINTER(CMarray)
         data = Marray._C.transpose(self.marray)
-        marray = Marray(owns_data=True)
+        marray = Marray(children=True)
         marray.marray = data
         marray.ndim = self.ndim
         marray.shape = self.shape[::-1]

@@ -175,28 +175,20 @@ Marray* matmul_marray(Marray* marray1, Marray* marray2) {
         exit(1);
     }
 
-    int* shape = (int*)malloc(2 * sizeof(int));
-    if (shape == NULL) {
-        fprintf(stderr, "memory alloc failed\n");
-        exit(1);
-    }
+    int* shape = (int*)safe_allocate(2, sizeof(int));
     shape[0] = marray1->shape[0];
     shape[1] = marray2->shape[1];
 
-    int size = marray1->shape[0] * marray2->shape[1];
-    float* storage = (float*)malloc(size * sizeof(float));
-    if (storage == NULL) {
-        fprintf(stderr, "memory alloc failed\n");
-        exit(1);
-    }
+    int size = shape[0] * shape[1];
+    float* storage = (float*)safe_allocate(size, sizeof(float));
 
-    for (int i = 0; i < marray1->shape[0]; i++) {
-        for (int j = 0; j < marray2->shape[1]; j++) {
+    for (int i = 0; i < shape[0]; i++) {
+        for (int j = 0; j < shape[1]; j++) {
             float total = 0;
             for (int k = 0; k < marray2->shape[0]; k++) {
-                total += marray1->storage[i * marray1->strides[0] + k] * marray2->storage[j + k * marray2->strides[0]];
+                total += marray1->storage[i * marray1->strides[0] + k] * marray2->storage[k * marray2->strides[0] + j];
             }
-            storage[i * marray1->strides[0] + j] = total;
+            storage[i * shape[0] + j] = total;
         }
     }
     return create_marray(storage, shape, 2);
