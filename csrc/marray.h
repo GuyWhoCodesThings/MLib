@@ -4,13 +4,14 @@
 #include <math.h>
 
 typedef struct {
-   float* storage;
+   void* storage;
    int* shape;
    int* strides;
    int ndim;
-   int size;
-   char* dtype;
-   int byte_size;
+   int size; // number of elements
+   int num_bytes; // number of bytes total
+   int data_size; // size of datatype
+   char* dtype; // string of datatype (ex: "int.64")
 } Marray;
 
 Marray* create_marray(float* storage, int* shape, int ndim);

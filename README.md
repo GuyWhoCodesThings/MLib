@@ -8,6 +8,8 @@ https://towardsdatascience.com/recreating-pytorch-from-scratch-with-gpu-support-
 
 https://medium.com/sfu-cspmp/diy-deep-learning-crafting-your-own-autograd-engine-from-scratch-for-effortless-backpropagation-ddab167faaf5
 
+Matrix Differentiation ( and some other stuff ), Randal J. Barnes, Department of Civil Engineering, University of Minnesota Minneapolis, Minnesota, USA
+
 Set Up:
 
 to build c library, use Makefile by running:

@@ -1,10 +1,13 @@
 from marray import *
 
-a = Marray([2,3,4,5])
-b = zeros_like(a).reshape(2,2)
-
+a = Marray([[1],[3]])
+b = Marray([[1,2]])
+grad = Marray([[1.0]])
+c = b @ a
+c.backward(grad)
+print(c)
+print(c.grad)
+print(a)
+print(a.grad)
 print(b)
-print(a.shape)
-
-
-
+print(b.grad)

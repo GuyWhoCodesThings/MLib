@@ -1,6 +1,6 @@
 import ctypes
 import os
-import grad
+from autograd import *
 
 PATH_TO_LIB = "./lib"
 
@@ -24,7 +24,6 @@ class Marray:
         self.grad = None
         self.grad_fn = None
         self.children = children
-        self.grad_fn_name = "" 
         self.shape = None
         self.ndim = None
         self.req_grad = req_grad
@@ -34,7 +33,7 @@ class Marray:
 
         if data != None:
             data, shape = self.flatten_list(data)
-            self.shape = shape.copy()
+            self.shape = tuple(shape.copy())
             self.ndim = len(shape)
            
             self.data_ctype = (ctypes.c_float * len(data))(*data.copy())
@@ -63,7 +62,7 @@ class Marray:
         if hasattr(self, 'data_ctype') and self.data_ctype is not None:
 
             # python manages the matrix storage (data) and shape if it doesn't have children
-            if self.children:
+            if self.children and len(self.children) > 0:
                 Marray._C.delete_storage.argtypes = [ctypes.POINTER(CMarray)]
                 Marray._C.delete_storage.restype = None
                 Marray._C.delete_storage(self.marray)
@@ -109,20 +108,21 @@ class Marray:
                     row += str(self[[i, j]]) + ', '
                 row = row[:-2] + '], '
                 res += row
-        res =  res[:-2] + f"], grad={self.grad}, op={self.grad_fn_name if self.grad_fn_name else 'None'})"
+        res =  res[:-2] + f"], op={self.grad_fn if self.grad_fn else 'None'})"
         return res
     
     def __add__(self, other):
         if isinstance(other, (int, float)):
-            other = self.ones_like() * other
+            other = ones_like(self) * other
         Marray._C.elem_add_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
         Marray._C.elem_add_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.elem_add_marray(self.marray, other.marray)
-        marray = Marray(children=True)
-        marray.marray = data
-        marray.ndim = self.ndim
-        marray.shape = self.shape
-        return marray
+        res = Marray(children=[self, other])
+        res.marray = data
+        res.grad_fn = ElemAdd(self, other)
+        res.ndim = self.ndim
+        res.shape = self.shape
+        return res
     
     def __radd__(self, other):
         return self.__add__(other)
@@ -133,20 +133,28 @@ class Marray:
     def __rsub__(self, other):
         return self.__sub__(other)
     
+    def __div__(self, other):
+        return self + () * other
+    
+    def __rdiv__(self, other):
+        return self.__div__(other)
+    
     def __mul__(self, other):
 
-        res = Marray(children=True)
+        res = Marray(children=[self, other])
         if isinstance(other, (int, float)):
             #handle scalar
-            other = ctypes.c_float(other)
+            cother = ctypes.c_float(other)
             Marray._C.scale_mul_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.c_float]
             Marray._C.scale_mul_marray.restype = ctypes.POINTER(CMarray)
-            data = Marray._C.scale_mul_marray(self.marray, other)
+            data = Marray._C.scale_mul_marray(self.marray, cother)
+            res.grad_fn = ScalMul(self, other)
             res.marray = data
         else:
             Marray._C.elem_mul_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
             Marray._C.elem_mul_marray.restype = ctypes.POINTER(CMarray)
             data = Marray._C.elem_mul_marray(self.marray, other.marray)
+            res.grad_fn = ElemMul(self, other)
             res.marray = data
         
         res.shape = self.shape
@@ -160,7 +168,8 @@ class Marray:
         Marray._C.matmul_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
         Marray._C.matmul_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.matmul_marray(self.marray, other.marray)
-        res =Marray(children=True)
+        res = Marray(children=[self, other])
+        res.grad_fn = MatMul(self, other)
         res.marray = data
         res.shape = [self.shape[0], other.shape[1]]
         res.ndim = self.ndim
@@ -170,7 +179,7 @@ class Marray:
         Marray._C.flatten_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.flatten_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.flatten_marray(self.marray)
-        res = Marray(children=True)
+        res = Marray(children=[self])
         res.marray = data
         res.shape = [scal_prod(self.shape)]
         res.ndim = 1
@@ -180,7 +189,7 @@ class Marray:
         Marray._C.squeeze_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.squeeze_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.squeeze_marray(self.marray)
-        res = Marray(children=True)
+        res = Marray(children=[self])
         res.marray = data
         res.shape = [max(self.shape)]
         res.ndim = 1
@@ -190,7 +199,7 @@ class Marray:
         Marray._C.unsqueeze_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.unsqueeze_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.unsqueeze_marray(self.marray)
-        res = Marray(children=True)
+        res = Marray(children=[self])
         res.marray = data
         res.shape = [1] + self.shape
         res.ndim = len(res.shape)
@@ -204,7 +213,7 @@ class Marray:
         Marray._C.transpose.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.transpose.restype = ctypes.POINTER(CMarray)
         data = Marray._C.transpose(self.marray)
-        marray = Marray(children=True)
+        marray = Marray(children=[self])
         marray.marray = data
         marray.ndim = self.ndim
         marray.shape = self.shape[::-1]
@@ -216,13 +225,26 @@ class Marray:
         Marray._C.reshape.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
         Marray._C.reshape.restype = ctypes.POINTER(CMarray)
         data = Marray._C.reshape(self.marray, cshape, cndim)
-        res = Marray()
+        res = Marray(children=[self])
         res.marray = data
         res.shape = shape
         res.ndim = len(shape)
         return res
-
     
+    def backward(self, grad):
+        if not self.req_grad:
+            return
+        if not self.grad:
+            self.grad = grad
+        else:
+            self.grad += grad
+        if not self.grad_fn:
+            return
+        grads = self.grad_fn.backward(grad)
+        for input, input_grad in zip(self.grad_fn.inputs, grads):
+            input.backward(input_grad)
+
+
 def scal_prod(list):
     prod = 1
     for l in list:
