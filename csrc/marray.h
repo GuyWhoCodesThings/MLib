@@ -9,6 +9,8 @@ typedef struct {
    int* strides;
    int ndim;
    int size;
+   char* dtype;
+   int byte_size;
 } Marray;
 
 Marray* create_marray(float* storage, int* shape, int ndim);
@@ -19,6 +21,7 @@ Marray* elem_mul_marray(Marray* marray1, Marray* marray2);
 Marray* scale_mul_marray(Marray* marray1, float c);
 
 Marray* matmul_marray(Marray* marray1, Marray* marray2);
+Marray* reshape(Marray* marray, int* shape, int ndim);
 Marray* transpose(Marray* marray);
 
 Marray* zeros_like(Marray* marray1);
@@ -27,6 +30,7 @@ Marray* ones_like(Marray* marray1);
 Marray* flatten_marray(Marray* marray);
 Marray* squeeze_marray(Marray* marray);
 Marray* unsqueeze_marray(Marray* marray);
+Marray* arange_marray(int hi, int* shape, int ndim);
 
 float get_item(Marray* marray, int* indices);
 

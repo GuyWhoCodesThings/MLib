@@ -1,13 +1,10 @@
-from marray import Marray, CMarray
+from marray import *
 
-a = Marray([1,2,3])
-print(a)
-b = a.unsqueeze()
+a = Marray([2,3,4,5])
+b = zeros_like(a).reshape(2,2)
+
 print(b)
-c = b.T
-print(c)
-d = b @ c
-print(d)
+print(a.shape)
 
 
 

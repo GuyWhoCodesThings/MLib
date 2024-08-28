@@ -127,6 +127,12 @@ class Marray:
     def __radd__(self, other):
         return self.__add__(other)
     
+    def __sub__(self, other):
+        return self + -1 * other
+    
+    def __rsub__(self, other):
+        return self.__sub__(other)
+    
     def __mul__(self, other):
 
         res = Marray(children=True)
@@ -159,27 +165,7 @@ class Marray:
         res.shape = [self.shape[0], other.shape[1]]
         res.ndim = self.ndim
         return res
-    
-    def zeros_like(self):
-        Marray._C.zeros_like.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.zeros_like.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.zeros_like(self.marray)
-        res = Marray(children=True)
-        res.marray = data
-        res.shape = self.shape
-        res.ndim = self.ndim
-        return res
-    
-    def ones_like(self):
-        Marray._C.ones_like.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.ones_like.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.ones_like(self.marray)
-        res = Marray(children=True)
-        res.marray = data
-        res.shape = self.shape
-        res.ndim = self.ndim
-        return res
-    
+        
     def flatten(self):
         Marray._C.flatten_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.flatten_marray.restype = ctypes.POINTER(CMarray)
@@ -224,9 +210,54 @@ class Marray:
         marray.shape = self.shape[::-1]
         return marray
     
+    def reshape(self, *shape):
+        cndim = ctypes.c_int(len(shape))
+        cshape = (ctypes.c_int * len(shape))(*list(shape).copy())
+        Marray._C.reshape.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+        Marray._C.reshape.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.reshape(self.marray, cshape, cndim)
+        res = Marray()
+        res.marray = data
+        res.shape = shape
+        res.ndim = len(shape)
+        return res
 
+    
 def scal_prod(list):
     prod = 1
     for l in list:
         prod *= l
     return prod
+
+def arange(hi, shape):
+    hi = ctypes.c_int(hi)
+    cndim = ctypes.c_int(len(shape))
+    cshape = (ctypes.c_int * len(shape))(*shape.copy())
+    Marray._C.arange_marray.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+    Marray._C.arange_marray.restype = ctypes.POINTER(CMarray)
+    data = Marray._C.arange_marray(hi, cshape, cndim)
+    res = Marray()
+    res.marray = data
+    res.shape = shape
+    res.ndim = len(shape)
+    return res
+
+def zeros_like(marr):
+        Marray._C.zeros_like.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.zeros_like.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.zeros_like(marr.marray)
+        res = Marray(children=True)
+        res.marray = data
+        res.shape = marr.shape
+        res.ndim = marr.ndim
+        return res
+    
+def ones_like(marr):
+    Marray._C.ones_like.argtypes = [ctypes.POINTER(CMarray)]
+    Marray._C.ones_like.restype = ctypes.POINTER(CMarray)
+    data = Marray._C.ones_like(marr.marray)
+    res = Marray(children=True)
+    res.marray = data
+    res.shape = marr.shape
+    res.ndim = marr.ndim
+    return res

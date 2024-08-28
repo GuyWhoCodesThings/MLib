@@ -233,6 +233,22 @@ Marray* transpose(Marray* marray) {
     return create_marray(storage, shape, ndim);
 }
 
+Marray* reshape(Marray* marray, int* shape, int ndim) {
+    int size = 1;
+    for (int i = 0; i < ndim; i++) {
+        size *= shape[i];
+    }
+    if (size != marray->size) {
+        printf("shape must contain same number of elements after");
+        exit(1);
+    }
+    float* storage = (float*)safe_allocate(size, sizeof(float));
+    for (int i = 0; i < size; i++) {
+        storage[i] = marray->storage[i];
+    }
+    return create_marray(storage, shape, ndim);
+}
+
 Marray* squeeze_marray(Marray* marray) {
 
     if (marray->ndim < 2) {
@@ -311,6 +327,16 @@ Marray* flatten_marray(Marray* marray) {
     }
     return create_marray(storage, shape, 1);
 }
+
+Marray* arange_marray(int hi, int* shape, int ndim) {
+    float* storage = (float*)safe_allocate(hi, sizeof(float));
+    float curr = 0.0;
+    for (int i = 0; i < hi; i++) {
+        storage[i] = curr++;
+    }
+    return create_marray(storage, shape, ndim);
+}
+
 
 // getter methods
 float get_item(Marray* marray, int* indices) {
