@@ -4,7 +4,7 @@
 #include <math.h>
 
 typedef struct {
-   void* storage;
+   double* storage;
    int* shape;
    int* strides;
    int ndim;
@@ -14,7 +14,7 @@ typedef struct {
    char* dtype; // string of datatype (ex: "int.64")
 } Marray;
 
-Marray* create_marray(float* storage, int* shape, int ndim);
+Marray* create_marray(double* storage, int* shape, int ndim);
 
 Marray* elem_add_marray(Marray* marray1, Marray* marray2);
 
@@ -28,22 +28,25 @@ Marray* transpose(Marray* marray);
 Marray* zeros_like(Marray* marray1);
 Marray* ones_like(Marray* marray1);
 
+Marray* lu_decomp_u(Marray* marray);
+Marray* lu_decomp_l(Marray* marray);
+Marray* lu_inverse(Marray* lu_mat_u, Marray* lu_mat_l);
+
 Marray* flatten_marray(Marray* marray);
 Marray* squeeze_marray(Marray* marray);
 Marray* unsqueeze_marray(Marray* marray);
 Marray* arange_marray(int hi, int* shape, int ndim);
+Marray* zeros(int* shape, int ndim);
+Marray* ones(int* shape, int ndim);
 
-float get_item(Marray* marray, int* indices);
+double get_item(Marray* marray, int* indices);
 
-float set_item(Marray* marray, int* indices, float item);
+double set_item(Marray* marray, int* indices, float item);
 
 void delete_marray(Marray* marray);
 void delete_storage(Marray* marray);
 void delete_strides(Marray* marray);
 void delete_shape(Marray* marray);
-
-
-
 
 
 

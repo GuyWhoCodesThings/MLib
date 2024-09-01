@@ -28,7 +28,7 @@ void* safe_allocate(int size, int dtype_size) {
 }
 
 // construct functions
-Marray* create_marray(float* storage, int* shape, int ndim) {
+Marray* create_marray(double* storage, int* shape, int ndim) {
 
     Marray* marray = (Marray*)safe_allocate(1, sizeof(Marray));
     
@@ -63,7 +63,7 @@ Marray* elem_add_marray(Marray* marray1, Marray* marray2) {
         shape[i] = marray1->shape[i];
     }
 
-    float* storage = (float*)safe_allocate(size, sizeof(float));
+    double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
         storage[i] = marray1->storage[i] + marray2->storage[i];
     }
@@ -81,7 +81,7 @@ Marray* elem_mul_marray(Marray* marray1, Marray* marray2) {
         shape[i] = marray1->shape[i];
     }
 
-    float* storage = (float*)safe_allocate(size, sizeof(float));
+    double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
         storage[i] = marray1->storage[i] * marray2->storage[i];
     }
@@ -249,6 +249,29 @@ Marray* reshape(Marray* marray, int* shape, int ndim) {
     return create_marray(storage, shape, ndim);
 }
 
+Marray* zeros(int* shape, int ndim) {
+    int size = 1;
+    for (int i = 0; i < ndim; i++) {
+        size *= shape[i];
+    }
+    float* storage = (float*)safe_allocate(size, sizeof(float));
+    for (int i = 0; i < size; i++) {
+        storage[i] = 0;
+    }
+    return create_marray(storage, shape, ndim);
+}
+Marray* ones(int* shape, int ndim) {
+    int size = 1;
+    for (int i = 0; i < ndim; i++) {
+        size *= shape[i];
+    }
+    float* storage = (float*)safe_allocate(size, sizeof(float));
+    for (int i = 0; i < size; i++) {
+        storage[i] = 1;
+    }
+    return create_marray(storage, shape, ndim);
+}
+
 Marray* squeeze_marray(Marray* marray) {
 
     if (marray->ndim < 2) {
@@ -382,3 +405,96 @@ void delete_shape(Marray* marray) {
     free(marray->shape);
     marray->shape = NULL;
 }
+
+
+Marray* lu_decomp_u(Marray* marray) {
+
+    float* storage = (float*)safe_allocate(marray->size, sizeof(float));
+    int* shape = (int*)safe_allocate(marray->ndim, sizeof(int));
+    for (int i = 0; i < marray->ndim; i++) {
+        shape[i] = marray->shape[i];
+    }
+    int n = shape[0];
+    Marray* lu_mat_u = create_marray(storage, shape, marray->ndim);
+
+    for (int i = 0; i < n; i++) {
+
+        // upper U
+        for (int k = i; k < n; k++) {
+            float sum = 0;
+            for (int j = 0; j < i; j++) {
+                sum += lu_mat_u->storage[i * n + j] * lu_mat_u->storage[j * n + k];
+            }
+            lu_mat_u->storage[i * n + k] = marray->storage[i * n + k] - sum;
+        }
+    }
+    return lu_mat_u;
+}
+Marray* lu_decomp_l(Marray* marray) {
+
+    float* storage = (float*)safe_allocate(marray->size, sizeof(float));
+    int* shape = (int*)safe_allocate(marray->ndim, sizeof(int));
+    for (int i = 0; i < marray->ndim; i++) {
+        shape[i] = marray->shape[i];
+    }
+    int n = shape[0];
+    Marray* lu_mat_l = create_marray(storage, shape, marray->ndim);
+
+    for (int i = 0; i < n; i++) {
+        // lower L
+        for (int k = i; k < n; k++) {
+
+            if (i == k) {
+                lu_mat_l->storage[i * n + i] = 1;
+                
+            } else {
+                float sum = 0;
+                for (int j = 0; j < i; j++) {
+                    sum += lu_mat_l->storage[k * n + j] * lu_mat_l->storage[j * n + i];
+                }
+                lu_mat_l->storage[k * n + i] = (marray->storage[k * n + i] - sum) / lu_mat_l->storage[i * n + i];
+            }
+        }
+    }
+    return lu_mat_l;
+}
+
+
+
+Marray* lu_inverse(Marray* lu_mat_u, Marray* lu_mat_l) {
+    int ndim = lu_mat_l->ndim;
+    int size = lu_mat_u->size;
+    float* storage = (float*)safe_allocate(size, sizeof(float));
+    int* shape = (int*)safe_allocate(ndim, sizeof(int));
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = lu_mat_u->shape[i];
+    }
+    int n = shape[0];
+    
+    Marray* inv_mat = create_marray(storage, shape, 2);
+    float* sols = (float*)safe_allocate(n, sizeof(float));
+
+    for (int j = 0; j < n; j++) {
+        // Solve Ly = e_j (Forward substitution)
+        for (int i = 0; i < n; i++) {
+            float sum = 0;
+            for (int k = 0; k < i; k++) {
+                sum += lu_mat_l->storage[i * n + k] * sols[k];
+            }
+            sols[i] = (j == i ? 1 : 0) - sum;
+        }
+
+        // Solve Ux = y (Backward substitution)
+        for (int i = n - 1; i >= 0; i--) {
+            float sum = 0;
+            for (int k = i + 1; k < n; k++) {
+                sum += lu_mat_u->storage[i * n + k] * inv_mat->storage[k * n + j];
+            }
+            inv_mat->storage[i * n + j] = (sols[i] - sum) / lu_mat_u->storage[i * n + i];
+        }
+    }
+
+    free(sols);
+    return inv_mat;
+}
+
