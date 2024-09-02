@@ -365,21 +365,25 @@ Marray* arange_marray(int hi, int* shape, int ndim) {
     return create_marray(storage, shape, ndim);
 }
 
-Marray* eye_marray(int* shape, int ndim) {
-    int size = 1;
+Marray* eye_marray(int n, int ndim) {
+    int size = n * ndim;
+    int* shape = (int*)safe_allocate(ndim, sizeof(int));
     for (int i = 0; i < ndim; i++) {
-        size *= shape[i];
+        shape[i] = n;
     }
     double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
-        // if ndim > 2, needs to do this for every shape until before last
-        if (i % shape[0] == 0) {
-            storage[i] = 1;
-        } else {
-            storage[i] = 0;
-        }
+        storage[i] = 0;  
     }
-    return create_marray(storage, shape, ndim);
+    Marray* eye = create_marray(storage, shape, ndim);
+    for (int i = 0; i < n; i++) {
+        int index = 0;
+        for (int j = 0; j < ndim; j++) {
+            index += i * eye->strides[j];
+        }
+        eye->storage[index] = 1;
+    }
+    return eye;
 }
 
 // Marray* diagonal_marray(int , int ndim) {

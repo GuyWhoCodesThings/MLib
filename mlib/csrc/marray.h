@@ -34,7 +34,7 @@ Marray* unsqueeze_marray(Marray* marray);
 Marray* arange_marray(int hi, int* shape, int ndim);
 Marray* zeros(int* shape, int ndim);
 Marray* ones(int* shape, int ndim);
-Marray* eye_marray(int* shape, int ndim);
+Marray* eye_marray(int n, int ndim);
 
 double get_item(Marray* marray, int* indices);
 

@@ -47,13 +47,25 @@ class Marray:
             )
 
     def flatten_list(self, data):
-        if isinstance(data[0], list):
-            flat = []
-            for l in data:
-                flat += l
-            return flat, [len(data), len(data[0])]
-        else:
-            return data, [len(data)]
+
+        shape = []
+        tmp = data
+        while isinstance(tmp, list):
+            shape.append(len(tmp))
+            for i in range(len(tmp) - 1):
+                if isinstance(tmp[i], list) and isinstance(tmp[i + 1], list) and len(tmp[i]) != len(tmp[i + 1]):
+                    raise Exception("ragged marrays are not allowed")
+            tmp = tmp[0]
+
+        def flatten_recur(data, res, sh):
+            if isinstance(data, list):
+                for d in data:
+                    flatten_recur(d, res, sh)
+            else: res.append(data)
+
+        flattened = []
+        flatten_recur(data, flattened, shape)
+        return flattened, shape
         
     def __del__(self):
         if hasattr(self, 'data_ctype') and self.data_ctype is not None:
@@ -93,29 +105,17 @@ class Marray:
         if not self.marray:
             return ""
         
-        # def recursive_print(marr, ndim, res):
-            # if ndim == 1:
-            #     for i in range(self.shape[-1]):
-            #         res += str(self[[i]]) + ', ' 
-            #     return res
-            # else:
-            #     "[" + recursive_print(marr, ndim - 1, res) + "]"
-
-        res = "["
-        if self.ndim == 1:
-            for i in range(self.shape[0]):
-                res += str(self[[i]]) + ', ' 
-            
-        else:
-            for i in range(self.shape[0]):
-                row = "["
-                for j in range(self.shape[1]):
-                    row += str(self[[i, j]]) + ', '
-                row = row[:-2] + '], '
-                res += row
-        res =  res[:-2] + f"]"
-        return res
-        # return recursive_print(self, self.ndim, "")
+        def recur_helper(indices, length_indices):
+            # base case
+            if length_indices == self.ndim:
+                return str(self[indices]) +  ","
+                
+            current = "["
+            for i in range(self.shape[length_indices]):
+                current += recur_helper(indices + [i], length_indices + 1)
+            return current + "],"
+        
+        return recur_helper([], 0)
     
     def __add__(self, other):
         if isinstance(other, (int, float)):
@@ -256,6 +256,16 @@ class Marray:
         for input, input_grad in zip(self.grad_fn.inputs, grads):
             input.backward(input_grad)
 
+    def zeros_like(self):
+        Marray._C.zeros_like.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.zeros_like.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.zeros_like(self.marray)
+        res = Marray(children=True)
+        res.marray = data
+        res.shape = self.shape
+        res.ndim = self.ndim
+        return res
+    
     def ones_like(self):
         Marray._C.ones_like.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.ones_like.restype = ctypes.POINTER(CMarray)

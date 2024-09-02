@@ -7,7 +7,6 @@ def scal_prod(list):
         prod *= l
     return prod
 
-
 def arange(hi, shape):
     hi = ctypes.c_int(hi)
     cndim = ctypes.c_int(len(shape))
@@ -21,32 +20,11 @@ def arange(hi, shape):
     res.ndim = len(shape)
     return res
 
-def zeros_like(marr):
-        Marray._C.zeros_like.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.zeros_like.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.zeros_like(marr.marray)
-        res = Marray(children=[marr])
-        res.marray = data
-        res.shape = marr.shape
-        res.ndim = marr.ndim
-        return res
-    
-def ones_like(marr):
-    Marray._C.ones_like.argtypes = [ctypes.POINTER(CMarray)]
-    Marray._C.ones_like.restype = ctypes.POINTER(CMarray)
-    data = Marray._C.ones_like(marr.marray)
-    res = Marray(children=[marr])
-    res.marray = data
-    res.shape = marr.shape
-    res.ndim = marr.ndim
-    return res
-
 def assert_close(marr1, marr2, precision=1e-2):
     Marray._C.assert_close.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray), ctypes.c_double]
     Marray._C.assert_close.restype = ctypes.POINTER(CMarray)
     precision = ctypes.c_double(precision)
     Marray._C.assert_close(marr1.marray, marr2.marray, precision)
-
 
 def zeros(*shape):
     cndim = ctypes.c_int(len(shape))
@@ -71,3 +49,16 @@ def ones(*shape):
     res.shape = shape
     res.ndim = len(shape)
     return res
+
+def eye(n, ndim):
+    cndim = ctypes.c_int(ndim)
+    cn = ctypes.c_int(n)
+    Marray._C.eye_marray.argtypes = [ctypes.c_int, ctypes.c_int]
+    Marray._C.eye_marray.restype = ctypes.POINTER(CMarray)
+    data = Marray._C.eye_marray(cn, cndim)
+    res = Marray(children=[1])
+    res.marray = data
+    res.shape = [n] * ndim
+    res.ndim = ndim
+    return res
+     
