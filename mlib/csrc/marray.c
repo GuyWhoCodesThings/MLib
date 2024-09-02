@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "linalg.h"
+
+
+#define TOL 0.1;
 
 // helper methods
 void verify_same_shape(Marray* marray1, Marray* marray2) {
@@ -39,6 +43,7 @@ Marray* create_marray(double* storage, int* shape, int ndim) {
     for (int i = 0; i < ndim; i++) {
         size *= shape[i];
     }
+    marray->size_offset = 0;
     marray->size = size;
     int* strides = (int*)safe_allocate(ndim, sizeof(int));
     int stride = 1;
@@ -88,7 +93,7 @@ Marray* elem_mul_marray(Marray* marray1, Marray* marray2) {
     return create_marray(storage, shape, ndim);
 }
 
-Marray* scale_mul_marray(Marray* marray1, float c) {
+Marray* scale_mul_marray(Marray* marray1, double c) {
     
     int size = marray1->size;
     int ndim = marray1->ndim;
@@ -102,7 +107,7 @@ Marray* scale_mul_marray(Marray* marray1, float c) {
         shape[i] = marray1->shape[i];
     }
 
-    float* storage = (float*)malloc(size * sizeof(float));
+    double* storage = (double*)malloc(size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -126,7 +131,7 @@ Marray* zeros_like(Marray* marray1) {
         shape[i] = marray1->shape[i];
     }
 
-    float* storage = (float*)malloc(size * sizeof(float));
+    double* storage = (double*)malloc(size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -151,7 +156,7 @@ Marray* ones_like(Marray* marray1) {
         shape[i] = marray1->shape[i];
     }
 
-    float* storage = (float*)malloc(size * sizeof(float));
+    double* storage = (double*)malloc(size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -180,11 +185,11 @@ Marray* matmul_marray(Marray* marray1, Marray* marray2) {
     shape[1] = marray2->shape[1];
 
     int size = shape[0] * shape[1];
-    float* storage = (float*)safe_allocate(size, sizeof(float));
+    double* storage = (double*)safe_allocate(size, sizeof(double));
 
     for (int i = 0; i < shape[0]; i++) {
         for (int j = 0; j < shape[1]; j++) {
-            float total = 0;
+            double total = 0;
             for (int k = 0; k < marray2->shape[0]; k++) {
                 total += marray1->storage[i * marray1->strides[0] + k] * marray2->storage[k * marray2->strides[0] + j];
             }
@@ -209,7 +214,7 @@ Marray* transpose(Marray* marray) {
         shape[i] = marray->shape[ndim - 1 - i];
     }
 
-    float* storage = (float*)malloc(size * sizeof(float));
+    double* storage = (double*)malloc(size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -242,7 +247,7 @@ Marray* reshape(Marray* marray, int* shape, int ndim) {
         printf("shape must contain same number of elements after");
         exit(1);
     }
-    float* storage = (float*)safe_allocate(size, sizeof(float));
+    double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
         storage[i] = marray->storage[i];
     }
@@ -254,7 +259,7 @@ Marray* zeros(int* shape, int ndim) {
     for (int i = 0; i < ndim; i++) {
         size *= shape[i];
     }
-    float* storage = (float*)safe_allocate(size, sizeof(float));
+    double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
         storage[i] = 0;
     }
@@ -265,7 +270,7 @@ Marray* ones(int* shape, int ndim) {
     for (int i = 0; i < ndim; i++) {
         size *= shape[i];
     }
-    float* storage = (float*)safe_allocate(size, sizeof(float));
+    double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
         storage[i] = 1;
     }
@@ -284,7 +289,7 @@ Marray* squeeze_marray(Marray* marray) {
         exit(1);
     }
 
-    float* storage = (float*)malloc(marray->size * sizeof(float));
+    double* storage = (double*)malloc(marray->size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -309,7 +314,7 @@ Marray* unsqueeze_marray(Marray* marray) {
         exit(1);
     }
 
-    float* storage = (float*)malloc(marray->size * sizeof(float));
+    double* storage = (double*)malloc(marray->size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -330,7 +335,7 @@ Marray* unsqueeze_marray(Marray* marray) {
 
 Marray* flatten_marray(Marray* marray) {
 
-    float* storage = (float*)malloc(marray->size * sizeof(float));
+    double* storage = (double*)malloc(marray->size * sizeof(double));
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
         exit(1);
@@ -352,17 +357,49 @@ Marray* flatten_marray(Marray* marray) {
 }
 
 Marray* arange_marray(int hi, int* shape, int ndim) {
-    float* storage = (float*)safe_allocate(hi, sizeof(float));
-    float curr = 0.0;
+    double* storage = (double*)safe_allocate(hi, sizeof(double));
+    double curr = 0.0;
     for (int i = 0; i < hi; i++) {
         storage[i] = curr++;
     }
     return create_marray(storage, shape, ndim);
 }
 
+Marray* eye_marray(int* shape, int ndim) {
+    int size = 1;
+    for (int i = 0; i < ndim; i++) {
+        size *= shape[i];
+    }
+    double* storage = (double*)safe_allocate(size, sizeof(double));
+    for (int i = 0; i < size; i++) {
+        // if ndim > 2, needs to do this for every shape until before last
+        if (i % shape[0] == 0) {
+            storage[i] = 1;
+        } else {
+            storage[i] = 0;
+        }
+    }
+    return create_marray(storage, shape, ndim);
+}
+
+// Marray* diagonal_marray(int , int ndim) {
+//     int size = 1;
+//     for (int i = 0; i < ndim; i++) {
+//         size *= shape[i];
+//     }
+//     double* storage = (double*)safe_allocate(size, sizeof(double));
+//     for (int i = 0; i < size; i++) {
+//         if (i % shape[0] == 0) {
+//             storage[i] = 1;
+//         } else {
+//             storage[i] = 0;
+//         }
+//     }
+//     return create_marray(storage, shape, ndim);
+// }
 
 // getter methods
-float get_item(Marray* marray, int* indices) {
+double get_item(Marray* marray, int* indices) {
 
     int current_index = 0;
     for (int i = 0; i < marray->ndim; i++) {
@@ -373,13 +410,13 @@ float get_item(Marray* marray, int* indices) {
 }
 
 // setter methods
-float set_item(Marray* marray, int* indices, float item) {
+double set_item(Marray* marray, int* indices, double item) {
 
     int current_index = 0;
     for (int i = 0; i < marray->ndim; i++) {
         current_index += i * marray->strides[i];
     }
-    float prev = marray->storage[current_index];
+    double prev = marray->storage[current_index];
     marray->storage[current_index] = item;
     return prev;   
 }
@@ -406,95 +443,122 @@ void delete_shape(Marray* marray) {
     marray->shape = NULL;
 }
 
-
-Marray* lu_decomp_u(Marray* marray) {
-
-    float* storage = (float*)safe_allocate(marray->size, sizeof(float));
+Marray* invert_marray(Marray* marray) {
+    double* tmp_storage = (double*)safe_allocate(marray->size, sizeof(double));
+    // memcpy(tmp_storage, marray->storage, marray->size);
+    for (int i = 0; i < marray->size; i++) {
+        tmp_storage[i] = marray->storage[i];
+    }
+    Marray* tmp_marray = create_marray(tmp_storage, marray->shape, marray->ndim);
+    int N = marray->shape[0];
+    int* perm_arr = (int*)safe_allocate(N + 1, sizeof(int));
+    int success = lup_decompose(tmp_marray, N, 0.000001, perm_arr);
+    if (!success) {
+        printf("inverse failed");
+        exit(1);
+    }
+    double* inverse_storage = (double*)safe_allocate(marray->size, sizeof(double));
     int* shape = (int*)safe_allocate(marray->ndim, sizeof(int));
+    // memcpy(shape, marray->shape, marray->ndim);
     for (int i = 0; i < marray->ndim; i++) {
         shape[i] = marray->shape[i];
     }
-    int n = shape[0];
-    Marray* lu_mat_u = create_marray(storage, shape, marray->ndim);
+    Marray* inverse_marray = create_marray(inverse_storage, shape, marray->ndim);
+    lup_invert(tmp_marray, perm_arr, N, inverse_marray);
 
-    for (int i = 0; i < n; i++) {
+    // clean up
+    delete_strides(tmp_marray);
+    delete_storage(tmp_marray);
+    delete_marray(tmp_marray);
+    free(perm_arr);
 
-        // upper U
-        for (int k = i; k < n; k++) {
-            float sum = 0;
-            for (int j = 0; j < i; j++) {
-                sum += lu_mat_u->storage[i * n + j] * lu_mat_u->storage[j * n + k];
-            }
-            lu_mat_u->storage[i * n + k] = marray->storage[i * n + k] - sum;
-        }
-    }
-    return lu_mat_u;
-}
-Marray* lu_decomp_l(Marray* marray) {
-
-    float* storage = (float*)safe_allocate(marray->size, sizeof(float));
-    int* shape = (int*)safe_allocate(marray->ndim, sizeof(int));
-    for (int i = 0; i < marray->ndim; i++) {
-        shape[i] = marray->shape[i];
-    }
-    int n = shape[0];
-    Marray* lu_mat_l = create_marray(storage, shape, marray->ndim);
-
-    for (int i = 0; i < n; i++) {
-        // lower L
-        for (int k = i; k < n; k++) {
-
-            if (i == k) {
-                lu_mat_l->storage[i * n + i] = 1;
-                
-            } else {
-                float sum = 0;
-                for (int j = 0; j < i; j++) {
-                    sum += lu_mat_l->storage[k * n + j] * lu_mat_l->storage[j * n + i];
-                }
-                lu_mat_l->storage[k * n + i] = (marray->storage[k * n + i] - sum) / lu_mat_l->storage[i * n + i];
-            }
-        }
-    }
-    return lu_mat_l;
+    return inverse_marray;
 }
 
+int lup_decompose(Marray* marray, int N, double tol, int* P) {
+    double* A = marray->storage;
+    int i, j, k, imax;
+    double maxA, absA;
 
-
-Marray* lu_inverse(Marray* lu_mat_u, Marray* lu_mat_l) {
-    int ndim = lu_mat_l->ndim;
-    int size = lu_mat_u->size;
-    float* storage = (float*)safe_allocate(size, sizeof(float));
-    int* shape = (int*)safe_allocate(ndim, sizeof(int));
-    for (int i = 0; i < ndim; i++) {
-        shape[i] = lu_mat_u->shape[i];
+    // Initialize permutation vector P
+    for (i = 0; i < N; i++) {
+        P[i] = i;
     }
-    int n = shape[0];
-    
-    Marray* inv_mat = create_marray(storage, shape, 2);
-    float* sols = (float*)safe_allocate(n, sizeof(float));
+    P[N] = 0; // Initialize the number of row swaps
 
-    for (int j = 0; j < n; j++) {
-        // Solve Ly = e_j (Forward substitution)
-        for (int i = 0; i < n; i++) {
-            float sum = 0;
+    for (i = 0; i < N; i++) {
+        // Find the pivot row
+        maxA = 0.0;
+        imax = i;
+        for (k = i; k < N; k++) {
+           
+            absA = fabs(A[k * N + i]);
+            if (absA > maxA) {
+                maxA = absA;
+                imax = k;
+            }
+        }
+
+        // Check for singular matrix
+        // printf("curr max is %f\n", maxA);
+        if (maxA < tol)
+            return 0; // Failure, matrix is near singular
+       
+
+        // Pivot rows if necessary
+        if (imax != i) {
+            // Swap permutation
+            j = P[i];
+            P[i] = P[imax];
+            P[imax] = j;
+
+      
+            // Swap rows in matrix A
+            for (j = 0; j < N; j++) {
+                double temp_val = A[i * N + j];
+                A[i * N + j] = A[imax * N + j];
+                A[imax * N + j] = temp_val;
+            }
+
+            // Update row swap count
+            P[N]++;
+        }
+
+        // LU decomposition
+        for (j = i + 1; j < N; j++) {
+            A[j * N + i] /= A[i * N + i];
+            for (k = i + 1; k < N; k++) {
+                A[j * N + k] -= A[j * N + i] * A[i * N + k];
+            }
+        }
+    }
+
+    return 1; // Decomposition done
+}
+
+void lup_invert(Marray* marray, int* P, int N, Marray* inv_marray) {
+    double* A = marray->storage;     // Original matrix
+    double* IA = inv_marray->storage; // Inverted matrix
+
+    // Initialize inverse matrix with identity matrix based on permutation vector p
+    for (int j = 0; j < N; j++) {
+        for (int i = 0; i < N; i++) {
+            IA[i * N + j] = (P[i] == j) ? 1.0 : 0.0;
+        }
+
+        // Forward substitution to solve L * Y = I
+        for (int i = 0; i < N; i++) {
             for (int k = 0; k < i; k++) {
-                sum += lu_mat_l->storage[i * n + k] * sols[k];
+                IA[i * N + j] -= A[i * N + k] * IA[k * N + j];
             }
-            sols[i] = (j == i ? 1 : 0) - sum;
         }
 
-        // Solve Ux = y (Backward substitution)
-        for (int i = n - 1; i >= 0; i--) {
-            float sum = 0;
-            for (int k = i + 1; k < n; k++) {
-                sum += lu_mat_u->storage[i * n + k] * inv_mat->storage[k * n + j];
+        // Backward substitution to solve U * X = Y
+        for (int i = N - 1; i >= 0; i--) {
+            for (int k = i + 1; k < N; k++) {
+                IA[i * N + j] -= A[i * N + k] * IA[k * N + j];
             }
-            inv_mat->storage[i * n + j] = (sols[i] - sum) / lu_mat_u->storage[i * n + i];
+            IA[i * N + j] /= A[i * N + i];
         }
     }
-
-    free(sols);
-    return inv_mat;
 }
-

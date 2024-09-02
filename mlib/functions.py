@@ -42,9 +42,9 @@ def ones_like(marr):
     return res
 
 def assert_close(marr1, marr2, precision=1e-2):
-    Marray._C.assert_close.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray), ctypes.c_float]
+    Marray._C.assert_close.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray), ctypes.c_double]
     Marray._C.assert_close.restype = ctypes.POINTER(CMarray)
-    precision = ctypes.c_float(precision)
+    precision = ctypes.c_double(precision)
     Marray._C.assert_close(marr1.marray, marr2.marray, precision)
 
 

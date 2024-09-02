@@ -4,7 +4,7 @@ from .autograd import *
 
 class CMarray(ctypes.Structure):
     _fields_ = [
-        ('storage', ctypes.POINTER(ctypes.c_float)),
+        ('storage', ctypes.POINTER(ctypes.c_double)),
         ('shape', ctypes.POINTER(ctypes.c_int)),
         ('strides', ctypes.POINTER(ctypes.c_int)),
         ('ndim', ctypes.c_int),
@@ -33,11 +33,11 @@ class Marray:
             self.shape = tuple(shape.copy())
             self.ndim = len(shape)
            
-            self.data_ctype = (ctypes.c_float * len(data))(*data.copy())
+            self.data_ctype = (ctypes.c_double * len(data))(*data.copy())
             self.shape_ctype = (ctypes.c_int * len(shape))(*shape.copy())
             self.ndim_ctype = ctypes.c_int(len(shape))
         
-            Marray._C.create_marray.argtypes = [ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+            Marray._C.create_marray.argtypes = [ctypes.POINTER(ctypes.c_double), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
             Marray._C.create_marray.restype = ctypes.POINTER(CMarray)
 
             self.marray = Marray._C.create_marray(
@@ -86,14 +86,22 @@ class Marray:
         
         indices_array = (ctypes.c_int * len(indices))(*indices)
         Marray._C.get_item.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int)]
-        Marray._C.get_item.restype = ctypes.c_float
+        Marray._C.get_item.restype = ctypes.c_double
         return Marray._C.get_item(self.marray, indices_array)
     
     def __str__(self):
         if not self.marray:
             return ""
         
-        res = "Marray(["
+        # def recursive_print(marr, ndim, res):
+            # if ndim == 1:
+            #     for i in range(self.shape[-1]):
+            #         res += str(self[[i]]) + ', ' 
+            #     return res
+            # else:
+            #     "[" + recursive_print(marr, ndim - 1, res) + "]"
+
+        res = "["
         if self.ndim == 1:
             for i in range(self.shape[0]):
                 res += str(self[[i]]) + ', ' 
@@ -105,8 +113,9 @@ class Marray:
                     row += str(self[[i, j]]) + ', '
                 row = row[:-2] + '], '
                 res += row
-        res =  res[:-2] + f"], op={self.grad_fn if self.grad_fn else 'None'})"
+        res =  res[:-2] + f"]"
         return res
+        # return recursive_print(self, self.ndim, "")
     
     def __add__(self, other):
         if isinstance(other, (int, float)):
@@ -141,8 +150,8 @@ class Marray:
         res = Marray(children=[self, other])
         if isinstance(other, (int, float)):
             #handle scalar
-            cother = ctypes.c_float(other)
-            Marray._C.scale_mul_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.c_float]
+            cother = ctypes.c_double(other)
+            Marray._C.scale_mul_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.c_double]
             Marray._C.scale_mul_marray.restype = ctypes.POINTER(CMarray)
             data = Marray._C.scale_mul_marray(self.marray, cother)
             res.grad_fn = ScalMul(self, other)
@@ -257,28 +266,10 @@ class Marray:
         res.ndim = self.ndim
         return res
     
-    def decomp(self):
-        Marray._C.lu_decomp_u.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.lu_decomp_u.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.lu_decomp_u(self.marray)
-        res_u = Marray(children=[self])
-        res_u.marray = data
-        res_u.shape = self.shape
-        res_u.ndim = self.ndim
-        Marray._C.lu_decomp_l.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.lu_decomp_l.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.lu_decomp_l(self.marray)
-        res_l = Marray(children=[self])
-        res_l.marray = data
-        res_l.shape = self.shape
-        res_l.ndim = self.ndim
-        return res_u, res_l
-
     def inverse(self):
-        l, u = self.decomp()
-        Marray._C.lu_inverse.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
-        Marray._C.lu_inverse.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.lu_inverse(u.marray, l.marray)
+        Marray._C.invert_marray.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.invert_marray.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.invert_marray(self.marray)
         res = Marray(children=[self])
         res.marray = data
         res.shape = self.shape
