@@ -33,6 +33,8 @@ class MatMul(GradFn):
     def backward(self, grad):
         x, y = self.inputs
         return [grad @ y.T, x.T @ grad]
+    
+
 
 class Trans(GradFn):
     def __init__(self, x):

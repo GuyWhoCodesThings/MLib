@@ -14,6 +14,7 @@ typedef struct {
 } Marray;
 
 Marray* create_marray(double* storage, int* shape, int ndim);
+Marray* view_marray(Marray* marray, int* indices, int indices_length);
 
 Marray* elem_add_marray(Marray* marray1, Marray* marray2);
 

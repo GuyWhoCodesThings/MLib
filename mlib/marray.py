@@ -108,11 +108,18 @@ class Marray:
         def recur_helper(indices, length_indices):
             # base case
             if length_indices == self.ndim:
-                return str(self[indices]) +  ","
+
+                if indices[-1] == self.shape[-1] - 1: return str(self[indices])
+    
+                return str(self[indices]) +  ", "
                 
             current = "["
             for i in range(self.shape[length_indices]):
                 current += recur_helper(indices + [i], length_indices + 1)
+                      
+            if not indices or indices[-1] == self.shape[length_indices - 1] - 1:
+                return current + "]"
+            
             return current + "],"
         
         return recur_helper([], 0)

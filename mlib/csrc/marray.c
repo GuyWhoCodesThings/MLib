@@ -8,6 +8,10 @@
 
 #define TOL 0.1;
 
+// todo:
+// add offset into all calcuations where possible, define constant for it maybe
+// figure out what to do with matmul with higher dimensions
+
 // helper methods
 void verify_same_shape(Marray* marray1, Marray* marray2) {
     if (marray1->ndim != marray2->ndim) {
@@ -53,6 +57,24 @@ Marray* create_marray(double* storage, int* shape, int ndim) {
     }
     marray->strides = strides;
     return marray;
+}
+
+Marray* view_marray(Marray* marray, int* indices, int indices_length) {
+
+    int ndim = marray->ndim;
+    if (indices_length >= ndim) {
+        printf("view must be an marray, use get element instead");
+        exit(1);
+    }
+    int* shape = (int*)safe_allocate(indices_length, sizeof(int));
+    int size = 1;
+    int offset = 0;
+    for (int i = 0; i < indices_length; i++) {
+        size *= marray->shape[ndim - i - 1];
+        offset += indices[i] * marray->strides[i];
+        shape[indices_length - i - 1] = marray->shape[ndim - i - 1];
+    }
+    Marray* res = create_marray(marray->storage, shape, ndim - indices_length);
 }
 
 // generator
