@@ -3,12 +3,12 @@ CC = gcc
 CFLAGS = -fPIC -Wall -O2
 
 # Directories
-SRC_DIR = ../mlib/csrc
-LIB_DIR = ../mlib
+SRC_DIR = ./mlib/csrc
+LIB_DIR = ./mlib
 
 # Source files
 SRCS = $(SRC_DIR)/marray.c
-OBJS = marray.o
+OBJS = $(LIB_DIR)/marray.o
 
 # Shared library
 LIB_NAME = libmarray.so

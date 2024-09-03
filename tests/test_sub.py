@@ -5,27 +5,27 @@ import mlib.functions
 
 class TestTensorOperations(unittest.TestCase):
 
-    def test_add_1d(self):
+    def test_sub_1d(self):
         try:
             x = mlib.Marray([1,2,3])
             y = mlib.Marray([2,3,4])
-            z = mlib.Marray([3,5,7])
-            mlib.functions.assert_close(x + y, z)
+            z = mlib.Marray([-1,-1,-1])
+            mlib.functions.assert_close(x - y, z)
         except:
             raise
-    def test_add_3d(self):
+    def test_sub_3d(self):
         try:
             x = mlib.Marray([[[1,2,3]]])
             y = mlib.Marray([[[2,3,4]]])
-            z = mlib.Marray([[[3,5,7]]])
-            mlib.functions.assert_close(x + y, z)
+            z = mlib.Marray([[[-1,-1,-1]]])
+            mlib.functions.assert_close(x - y, z)
         except:
             raise
-    def test_scal_add_3d(self):
+    def test_scal_sub_3d(self):
         try:
             x = mlib.Marray([[[1,2,3]]])
             y = 2
-            z = mlib.Marray([[[3,4,5]]])
-            mlib.functions.assert_close(x + y, z)
+            z = mlib.Marray([[[-1,0,1]]])
+            mlib.functions.assert_close(x - y, z)
         except:
             raise

@@ -20,11 +20,10 @@ def arange(hi, shape):
     res.ndim = len(shape)
     return res
 
-def assert_close(marr1, marr2, precision=1e-2):
+def assert_close(marr1, marr2, precision=1e-3):
     Marray._C.assert_close.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray), ctypes.c_double]
-    Marray._C.assert_close.restype = ctypes.POINTER(CMarray)
-    precision = ctypes.c_double(precision)
-    Marray._C.assert_close(marr1.marray, marr2.marray, precision)
+    Marray._C.assert_close.restype = None
+    Marray._C.assert_close(marr1.marray, marr2.marray, ctypes.c_double(precision))
 
 def zeros(*shape):
     cndim = ctypes.c_int(len(shape))

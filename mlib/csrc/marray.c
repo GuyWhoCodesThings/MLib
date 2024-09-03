@@ -634,3 +634,15 @@ void lup_invert(Marray* marray, int* P, int N, Marray* inv_marray) {
 //     double* storage = (double*)safe_allocate(marray->size, sizeof(double));
 //     return create_marray(storage, marray->shape, marray->ndim);
 // }
+
+void assert_close(Marray* marray1, Marray* marray2, double precision) {
+    
+    verify_same_shape(marray1, marray2);
+    for (int i = 0; i < marray1->size; i++) {
+        double diff = fabs(ACCESS_ELEMENT(marray1, i) - ACCESS_ELEMENT(marray2, i));
+        if (diff > precision) {
+            printf("diff of %f is greater than %f at index %d", diff, precision, i);
+            exit(1);
+        }
+    }
+}
