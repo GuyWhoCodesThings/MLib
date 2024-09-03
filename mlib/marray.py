@@ -22,6 +22,7 @@ class Marray:
         self.grad_fn = None
         self.children = children
         self.shape = None
+        self.is_view = False
         self.ndim = None
         self.req_grad = req_grad
 
@@ -89,18 +90,41 @@ class Marray:
             Marray._C.delete_marray.restype = None
             Marray._C.delete_marray(self.marray)
 
+    def __setitem__(self, indices):
+        if len(indices) > self.ndim:
+            raise Exception('indices must be less than or equal to marray shape')
+
     def __getitem__(self, indices):
-        if isinstance(indices, slice):
-            pass
-       
-        if len(indices) != len(self.shape):
-            raise Exception('indices must be same length as shape')
+        if not isinstance(indices, tuple):
+            indices = (indices,)
+            
+        if len(indices) > self.ndim:
+            raise Exception('indices must be less than or equal to marray shape')
         
+        if isinstance(indices[0], slice):
+            raise Exception('slice indexing is not implemented yet')
+
+        if len(indices) < self.ndim:
+            # Handling case where the number of indices is less than the number of dimensions
+            Marray._C.view_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
+            Marray._C.view_marray.restype = ctypes.POINTER(CMarray)
+            cindices_length = ctypes.c_int(len(indices))
+            cindices = (ctypes.c_int * len(indices))(*indices)
+            data = Marray._C.view_marray(self.marray, cindices, cindices_length)
+            res = Marray(children=[self])
+            res.marray = data
+            res.is_view = True
+            res.ndim = self.ndim - len(indices)
+            res.shape = self.shape[len(indices):]
+            return res
+
+        # Handling case where the number of indices matches the number of dimensions
         indices_array = (ctypes.c_int * len(indices))(*indices)
         Marray._C.get_item.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int)]
         Marray._C.get_item.restype = ctypes.c_double
-        return Marray._C.get_item(self.marray, indices_array)
-    
+        value = Marray._C.get_item(self.marray, indices_array)
+        return float(value)
+
     def __str__(self):
         if not self.marray:
             return ""
@@ -109,9 +133,9 @@ class Marray:
             # base case
             if length_indices == self.ndim:
 
-                if indices[-1] == self.shape[-1] - 1: return str(self[indices])
+                if indices[-1] == self.shape[-1] - 1: return str(self[tuple(indices)])
     
-                return str(self[indices]) +  ", "
+                return str(self[tuple(indices)]) +  ", "
                 
             current = "["
             for i in range(self.shape[length_indices]):
@@ -292,5 +316,21 @@ class Marray:
         res.shape = self.shape
         res.ndim = self.ndim
         return res
+    
+    def item(self):
+        Marray._C.marray_to_item.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.marray_to_item.restype = ctypes.c_double
+        return Marray._C.marray_to_item(self.marray)
+    
+    def sum(self):
+        Marray._C.sum_marray.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.sum_marray.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.sum_marray(self.marray)
+        res = Marray(children=[self])
+        res.marray = data
+        res.shape = self.shape
+        res.ndim = self.ndim
+        return res
+
 
 

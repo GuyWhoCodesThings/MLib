@@ -8,9 +8,15 @@
 
 #define TOL 0.1;
 
+// static functions
+static inline double ACCESS_ELEMENT(Marray* marray, int idx) {
+    return marray->storage[idx + marray->offset];
+}
+
 // todo:
 // add offset into all calcuations where possible, define constant for it maybe
 // figure out what to do with matmul with higher dimensions
+// *MAKE sure to add prev offset when creating new view with new offset
 
 // helper methods
 void verify_same_shape(Marray* marray1, Marray* marray2) {
@@ -47,7 +53,8 @@ Marray* create_marray(double* storage, int* shape, int ndim) {
     for (int i = 0; i < ndim; i++) {
         size *= shape[i];
     }
-    marray->size_offset = 0;
+   
+    marray->offset = 0;
     marray->size = size;
     int* strides = (int*)safe_allocate(ndim, sizeof(int));
     int stride = 1;
@@ -66,15 +73,22 @@ Marray* view_marray(Marray* marray, int* indices, int indices_length) {
         printf("view must be an marray, use get element instead");
         exit(1);
     }
-    int* shape = (int*)safe_allocate(indices_length, sizeof(int));
-    int size = 1;
+    
     int offset = 0;
     for (int i = 0; i < indices_length; i++) {
-        size *= marray->shape[ndim - i - 1];
         offset += indices[i] * marray->strides[i];
-        shape[indices_length - i - 1] = marray->shape[ndim - i - 1];
     }
+
+    int* shape = (int*)safe_allocate(ndim - indices_length, sizeof(int));
+    for (int i = 0; i < ndim - indices_length; i++) {
+     
+        shape[i] = marray->shape[i + indices_length];
+    
+    }
+    
     Marray* res = create_marray(marray->storage, shape, ndim - indices_length);
+    res->offset = offset;
+    return res;
 }
 
 // generator
@@ -92,7 +106,7 @@ Marray* elem_add_marray(Marray* marray1, Marray* marray2) {
 
     double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
-        storage[i] = marray1->storage[i] + marray2->storage[i];
+        storage[i] = ACCESS_ELEMENT(marray1, i) + ACCESS_ELEMENT(marray2, i);
     }
     return create_marray(storage, shape, ndim);
 }
@@ -110,7 +124,7 @@ Marray* elem_mul_marray(Marray* marray1, Marray* marray2) {
 
     double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
-        storage[i] = marray1->storage[i] * marray2->storage[i];
+        storage[i] = ACCESS_ELEMENT(marray1, i) * ACCESS_ELEMENT(marray2, i);
     }
     return create_marray(storage, shape, ndim);
 }
@@ -135,7 +149,7 @@ Marray* scale_mul_marray(Marray* marray1, double c) {
         exit(1);
     }
     for (int i = 0; i < size; i++) {
-        storage[i] = marray1->storage[i] * c;
+        storage[i] = ACCESS_ELEMENT(marray1, i) * c;
     }
     return create_marray(storage, shape, ndim);
 }
@@ -431,7 +445,7 @@ double get_item(Marray* marray, int* indices) {
     for (int i = 0; i < marray->ndim; i++) {
         current_index += indices[i] * marray->strides[i];
     }
-    return marray->storage[current_index];
+    return ACCESS_ELEMENT(marray, current_index);
     
 }
 
@@ -445,6 +459,22 @@ double set_item(Marray* marray, int* indices, double item) {
     double prev = marray->storage[current_index];
     marray->storage[current_index] = item;
     return prev;   
+}
+
+double sum_marray(Marray* marray) {
+    double total = 0;
+    for (int i = 0; i < marray->size; i++) {
+        total += marray->storage[i];
+    }
+    return total;
+}
+
+double marray_to_item(Marray* marray) {
+    if (marray->size != 1) {
+        printf("marray size must be 1");
+        exit(1);
+    }
+    return marray->storage[0];
 }
 
 // garbage functions

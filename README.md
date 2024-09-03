@@ -2,6 +2,8 @@
 library for linear algebra operations with built in auto differentiation 
 
 resources:
+https://en.wikipedia.org/wiki/LU_decomposition
+
 http://blog.ezyang.com/2019/05/pytorch-internals/
 
 https://towardsdatascience.com/recreating-pytorch-from-scratch-with-gpu-support-and-automatic-differentiation-8f565122a3cc

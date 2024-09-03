@@ -9,8 +9,7 @@ typedef struct {
    int* strides;
    int ndim;
    int size; // number of elements
-   int size_offset;
-   int shape_offset;
+   int offset;
 } Marray;
 
 Marray* create_marray(double* storage, int* shape, int ndim);
@@ -44,6 +43,9 @@ double set_item(Marray* marray, int* indices, double item);
 Marray* invert_marray(Marray* marray);
 int lup_decompose(Marray* marray, int N, double tol, int* P);
 void lup_invert(Marray* marray, int* P, int N, Marray* inv_marray);
+
+double sum_marray(Marray* marray);
+double marray_to_item(Marray* marray);
 
 void delete_marray(Marray* marray);
 void delete_storage(Marray* marray);
