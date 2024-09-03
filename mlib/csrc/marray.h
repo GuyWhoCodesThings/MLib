@@ -38,7 +38,7 @@ Marray* eye_marray(int n, int ndim);
 
 double get_item(Marray* marray, int* indices);
 
-double set_item(Marray* marray, int* indices, double item);
+void set_item(Marray* marray, int* indices, double item);
 
 Marray* invert_marray(Marray* marray);
 int lup_decompose(Marray* marray, int N, double tol, int* P);

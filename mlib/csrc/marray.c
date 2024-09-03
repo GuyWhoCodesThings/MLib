@@ -79,6 +79,11 @@ Marray* view_marray(Marray* marray, int* indices, int indices_length) {
         offset += indices[i] * marray->strides[i];
     }
 
+    if (offset >= marray->size) {
+        printf("indices out of range");
+        exit(1);
+    }
+
     int* shape = (int*)safe_allocate(ndim - indices_length, sizeof(int));
     for (int i = 0; i < ndim - indices_length; i++) {
      
@@ -445,20 +450,26 @@ double get_item(Marray* marray, int* indices) {
     for (int i = 0; i < marray->ndim; i++) {
         current_index += indices[i] * marray->strides[i];
     }
+    if (current_index >= marray->size) {
+        printf("indices out of range");
+        exit(1);
+    }
     return ACCESS_ELEMENT(marray, current_index);
     
 }
 
 // setter methods
-double set_item(Marray* marray, int* indices, double item) {
+void set_item(Marray* marray, int* indices, double item) {
 
     int current_index = 0;
     for (int i = 0; i < marray->ndim; i++) {
         current_index += i * marray->strides[i];
     }
-    double prev = marray->storage[current_index];
-    marray->storage[current_index] = item;
-    return prev;   
+    if (current_index >= marray->size) {
+        printf("indices out of range");
+        exit(1);
+    }
+    marray->storage[current_index] = item;  
 }
 
 double sum_marray(Marray* marray) {
@@ -618,3 +629,8 @@ void lup_invert(Marray* marray, int* P, int N, Marray* inv_marray) {
         }
     }
 }
+
+// void* zero_offset(Marray* marray){
+//     double* storage = (double*)safe_allocate(marray->size, sizeof(double));
+//     return create_marray(storage, marray->shape, marray->ndim);
+// }

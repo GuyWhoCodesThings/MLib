@@ -90,14 +90,21 @@ class Marray:
             Marray._C.delete_marray.restype = None
             Marray._C.delete_marray(self.marray)
 
-    def __setitem__(self, indices):
-        if len(indices) > self.ndim:
-            raise Exception('indices must be less than or equal to marray shape')
+    def __setitem__(self, indices, value):
+        if not isinstance(indices, tuple):
+            indices = (indices,)
+        if len(indices) != self.ndim:
+            raise Exception('indices must be same length as ndim')
+        
+        
+        indices_array = (ctypes.c_int * len(indices))(*indices)
+        Marray._C.set_item.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int), ctypes.c_double]
+        Marray._C.set_item.restype = None
+        Marray._C.set_item(self.marray, indices_array, ctypes.c_double(value))
 
     def __getitem__(self, indices):
         if not isinstance(indices, tuple):
-            indices = (indices,)
-            
+            indices = (indices,)  
         if len(indices) > self.ndim:
             raise Exception('indices must be less than or equal to marray shape')
         
