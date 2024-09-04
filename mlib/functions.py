@@ -1,12 +1,6 @@
 import ctypes
 from .marray import Marray, CMarray
 
-def scal_prod(list):
-    prod = 1
-    for l in list:
-        prod *= l
-    return prod
-
 def arange(hi, shape):
     hi = ctypes.c_int(hi)
     cndim = ctypes.c_int(len(shape))
@@ -14,10 +8,22 @@ def arange(hi, shape):
     Marray._C.arange_marray.argtypes = [ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.c_int]
     Marray._C.arange_marray.restype = ctypes.POINTER(CMarray)
     data = Marray._C.arange_marray(hi, cshape, cndim)
-    res = Marray()
+    res = Marray(children=[True], req_grad=False)
     res.marray = data
     res.shape = shape
+    res.req_grad = False
     res.ndim = len(shape)
+    return res
+
+def random(lo, hi, size):
+    Marray._C.random_marray.argtypes = [ctypes.c_double, ctypes.c_double, ctypes.c_int]
+    Marray._C.random_marray.restype = ctypes.POINTER(CMarray)
+    data = Marray._C.random_marray(ctypes.c_double(lo), ctypes.c_double(hi), ctypes.c_int(size))
+    res = Marray(children=[True], req_grad=False)
+    res.marray = data
+    res.shape = [size]
+    res.req_grad = False
+    res.ndim = 1
     return res
 
 def assert_close(marr1, marr2, precision=1e-3):
@@ -31,9 +37,10 @@ def zeros(*shape):
     Marray._C.zeros.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_int]
     Marray._C.zeros.restype = ctypes.POINTER(CMarray)
     data = Marray._C.zeros(cshape, cndim)
-    res = Marray(children=[1])
+    res = Marray(children=[True], req_grad=False)
     res.marray = data
     res.shape = shape
+    res.req_grad = False
     res.ndim = len(shape)
     return res
 
@@ -43,7 +50,7 @@ def ones(*shape):
     Marray._C.ones.argtypes = [ctypes.POINTER(ctypes.c_int), ctypes.c_int]
     Marray._C.ones.restype = ctypes.POINTER(CMarray)
     data = Marray._C.ones(cshape, cndim)
-    res = Marray(children=[1])
+    res = Marray(children=[1], req_grad=False)
     res.marray = data
     res.shape = shape
     res.ndim = len(shape)
@@ -55,9 +62,10 @@ def eye(n, ndim):
     Marray._C.eye_marray.argtypes = [ctypes.c_int, ctypes.c_int]
     Marray._C.eye_marray.restype = ctypes.POINTER(CMarray)
     data = Marray._C.eye_marray(cn, cndim)
-    res = Marray(children=[1])
+    res = Marray(children=[1], req_grad=False)
     res.marray = data
     res.shape = [n] * ndim
+    res.req_grad = False
     res.ndim = ndim
     return res
      

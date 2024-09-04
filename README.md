@@ -1,7 +1,7 @@
 # MLib
 library for linear algebra operations with built in auto differentiation 
 
-resources:
+credits and resources I used for research:
 
 https://en.wikipedia.org/wiki/LU_decomposition
 
@@ -13,9 +13,13 @@ https://medium.com/sfu-cspmp/diy-deep-learning-crafting-your-own-autograd-engine
 
 Matrix Differentiation ( and some other stuff ), Randal J. Barnes, Department of Civil Engineering, University of Minnesota Minneapolis, Minnesota, USA
 
+https://numpy.org/devdocs/dev/internals.html
+
 Set Up:
 
-to build c library, use Makefile by running:
-% make clean && make
+To build C library, use Makefile by running:
+% make
+and you can delete build files using:
+% make clean
 
 To get familiar with the library, go through tutorial.ipynb, which contains examples of basic operations and use cases

@@ -9,6 +9,7 @@ class CMarray(ctypes.Structure):
         ('strides', ctypes.POINTER(ctypes.c_int)),
         ('ndim', ctypes.c_int),
         ('size', ctypes.c_int),
+        ('offset', ctypes.c_int),
     ]
 
 class Marray:
@@ -219,19 +220,20 @@ class Marray:
         res.ndim = self.ndim
         return res
     
-    def scal_prod(self, list):
-        prod = 1
-        for l in list:
-            prod *= l
-        return prod
-        
     def flatten(self):
+
+        def scal_prod(list):
+            prod = 1
+            for l in list:
+                prod *= l
+            return prod
         Marray._C.flatten_marray.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.flatten_marray.restype = ctypes.POINTER(CMarray)
         data = Marray._C.flatten_marray(self.marray)
         res = Marray(children=[self])
         res.marray = data
-        res.shape = [self.scal_prod(self.shape)]
+        res.grad_fn = Reshape(self)
+        res.shape = [scal_prod(self.shape)]
         res.ndim = 1
         return res
     
@@ -243,6 +245,7 @@ class Marray:
         marray = Marray(children=[self])
         marray.marray = data
         marray.ndim = self.ndim
+        marray.grad_fn = Trans(self)
         marray.shape = self.shape[::-1]
         return marray
     
@@ -254,28 +257,16 @@ class Marray:
         data = Marray._C.reshape(self.marray, cshape, cndim)
         res = Marray(children=[self])
         res.marray = data
+        res.grad_fn = Reshape(self)
         res.shape = shape
         res.ndim = len(shape)
         return res
     
-    def backward(self, grad):
-        if not self.req_grad:
-            return
-        if not self.grad:
-            self.grad = grad
-        else:
-            self.grad += grad
-        if not self.grad_fn:
-            return
-        grads = self.grad_fn.backward(grad)
-        for input, input_grad in zip(self.grad_fn.inputs, grads):
-            input.backward(input_grad)
-
     def zeros_like(self):
         Marray._C.zeros_like.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.zeros_like.restype = ctypes.POINTER(CMarray)
         data = Marray._C.zeros_like(self.marray)
-        res = Marray(children=True)
+        res = Marray(children=True, req_grad=False)
         res.marray = data
         res.shape = self.shape
         res.ndim = self.ndim
@@ -285,7 +276,7 @@ class Marray:
         Marray._C.ones_like.argtypes = [ctypes.POINTER(CMarray)]
         Marray._C.ones_like.restype = ctypes.POINTER(CMarray)
         data = Marray._C.ones_like(self.marray)
-        res = Marray(children=True)
+        res = Marray(children=True, req_grad=False)
         res.marray = data
         res.shape = self.shape
         res.ndim = self.ndim
@@ -297,6 +288,7 @@ class Marray:
         data = Marray._C.invert_marray(self.marray)
         res = Marray(children=[self])
         res.marray = data
+        res.grad_fn = Inverse(self)
         res.shape = self.shape
         res.ndim = self.ndim
         return res
@@ -315,6 +307,27 @@ class Marray:
         res.shape = self.shape
         res.ndim = self.ndim
         return res
+    
+    def backward(self, grad=None):
+        print(f"node: {self}", end=" ")
+        if not self.req_grad:
+            return
+        if not grad:
+            if self.ndim > 1 or self.shape[0] != 1:
+                raise Exception("need to provide a gradient for non-scalar marrays")
+            grad = Marray([1])
+            
+        if not self.grad:
+            self.grad = grad
+        else:
+            self.grad += grad
+        
+        print(f"grad: {self.grad}")
+        if not self.grad_fn:
+            return
+        grads = self.grad_fn.backward(self.grad)
+        for input, input_grad in zip(self.grad_fn.inputs, grads):
+            input.backward(input_grad)
 
 
 

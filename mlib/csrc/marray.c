@@ -90,6 +90,18 @@ Marray* view_marray(Marray* marray, int* indices, int indices_length) {
     return res;
 }
 
+Marray* random_marray(double lo, double hi, int size) {
+
+    double* storage = (double*)safe_allocate(size, sizeof(double));
+    for (int i = 0; i < size; i++) {
+        storage[i] = lo + (double)rand() / RAND_MAX * (hi - lo);
+    }
+    int* shape = (int*)safe_allocate(1, sizeof(int));
+    shape[0] = size;
+    return create_marray(storage, shape, 1);
+
+}
+
 // generator
 
 Marray* elem_add_marray(Marray* marray1, Marray* marray2) {

@@ -15,6 +15,8 @@ typedef struct {
 Marray* create_marray(double* storage, int* shape, int ndim);
 Marray* view_marray(Marray* marray, int* indices, int indices_length);
 
+Marray* random_marray(double lo, double hi, int size);
+
 Marray* elem_add_marray(Marray* marray1, Marray* marray2);
 
 Marray* elem_mul_marray(Marray* marray1, Marray* marray2);
