@@ -18,4 +18,4 @@ Set Up:
 to build c library, use Makefile by running:
 % make clean && make
 
-To get familiar with the library, go through example.ipynb, which contains examples of basic operations and use cases
+To get familiar with the library, go through tutorial.ipynb, which contains examples of basic operations and use cases
