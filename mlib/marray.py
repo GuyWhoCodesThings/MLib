@@ -235,29 +235,6 @@ class Marray:
         res.ndim = 1
         return res
     
-    def squeeze(self):
-        Marray._C.squeeze_marray.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.squeeze_marray.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.squeeze_marray(self.marray)
-        res = Marray(children=[self])
-        res.marray = data
-        res.shape = [max(self.shape)]
-        res.ndim = 1
-        return res
-    
-    def unsqueeze(self):
-        Marray._C.unsqueeze_marray.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.unsqueeze_marray.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.unsqueeze_marray(self.marray)
-        res = Marray(children=[self])
-        res.marray = data
-        res.shape = [1] + self.shape
-        res.ndim = len(res.shape)
-        return res
-        
-    def __repr__(self):
-        return self.__str__()
-    
     @property
     def T (self):
         Marray._C.transpose.argtypes = [ctypes.POINTER(CMarray)]

@@ -1,10 +1,4 @@
 #include "marray.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include "linalg.h"
-
 
 #define TOL 0.1;
 
@@ -318,61 +312,6 @@ Marray* ones(int* shape, int ndim) {
     return create_marray(storage, shape, ndim);
 }
 
-Marray* squeeze_marray(Marray* marray) {
-
-    if (marray->ndim < 2) {
-        printf("must be have 2 dim");
-        exit(1);
-    }
-
-    if (marray->shape[0] != 1 && marray->shape[1] != 1) {
-        printf("must have 1 dim of size 1");
-        exit(1);
-    }
-
-    double* storage = (double*)malloc(marray->size * sizeof(double));
-    if (storage == NULL) {
-        fprintf(stderr, "memory alloc failed\n");
-        exit(1);
-    }
-    for (int i = 0; i < marray->size; i++) {
-        storage[i] = marray->storage[i];
-    }
-
-    int* shape = (int*)malloc(1 * sizeof(int));
-    if (shape == NULL) {
-        fprintf(stderr, "memory alloc failed\n");
-        exit(1);
-    }
-    shape[0] = marray->shape[0] ? marray->shape[0] > marray->shape[1] : marray->shape[1];
-    return create_marray(storage, shape, 1);
-}
-
-Marray* unsqueeze_marray(Marray* marray) {
-
-    if (marray->ndim > 1) {
-        printf("must be have 2 dim");
-        exit(1);
-    }
-
-    double* storage = (double*)malloc(marray->size * sizeof(double));
-    if (storage == NULL) {
-        fprintf(stderr, "memory alloc failed\n");
-        exit(1);
-    }
-    for (int i = 0; i < marray->size; i++) {
-        storage[i] = marray->storage[i];
-    }
-
-    int* shape = (int*)malloc(2 * sizeof(int));
-    if (shape == NULL) {
-        fprintf(stderr, "memory alloc failed\n");
-        exit(1);
-    }
-    shape[0] = 1;
-    shape[1] = marray->shape[0];
-    return create_marray(storage, shape, 2);
-}
 
 Marray* flatten_marray(Marray* marray) {
 

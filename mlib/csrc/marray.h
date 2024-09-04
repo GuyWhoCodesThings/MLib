@@ -29,8 +29,7 @@ Marray* zeros_like(Marray* marray1);
 Marray* ones_like(Marray* marray1);
 
 Marray* flatten_marray(Marray* marray);
-Marray* squeeze_marray(Marray* marray);
-Marray* unsqueeze_marray(Marray* marray);
+
 Marray* arange_marray(int hi, int* shape, int ndim);
 Marray* zeros(int* shape, int ndim);
 Marray* ones(int* shape, int ndim);
