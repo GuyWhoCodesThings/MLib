@@ -113,6 +113,7 @@ class Marray:
             raise Exception('slice indexing is not implemented yet')
 
         if len(indices) < self.ndim:
+           
             # Handling case where the number of indices is less than the number of dimensions
             Marray._C.view_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
             Marray._C.view_marray.restype = ctypes.POINTER(CMarray)
@@ -124,6 +125,9 @@ class Marray:
             res.is_view = True
             res.ndim = self.ndim - len(indices)
             res.shape = self.shape[len(indices):]
+            # Marray._C.print_marray_shape.argtypes = [ctypes.POINTER(CMarray)]
+            # Marray._C.print_marray_shape.restype = None
+            # Marray._C.print_marray_shape(res.marray)  # Print the shape of self in C
             return res
 
         # Handling case where the number of indices matches the number of dimensions
@@ -156,6 +160,25 @@ class Marray:
         
         return recur_helper([], 0)
     
+    def to_list(self):
+        if not self.marray:
+            return []
+
+        def recur_helper(indices, length_indices):
+            # Base case: when we reach the last dimension, return the scalar value
+            if length_indices == self.ndim:
+                return self[tuple(indices)]
+
+            # Recursively handle higher dimensions by creating sublists
+            current_list = []
+            for i in range(self.shape[length_indices]):
+                current_list.append(recur_helper(indices + [i], length_indices + 1))
+
+            return current_list
+
+        return recur_helper([], 0)
+
+    
     def __add__(self, other):
         if isinstance(other, (int, float)):
             other = self.ones_like() * other
@@ -178,11 +201,63 @@ class Marray:
     def __rsub__(self, other):
         return self.__sub__(other)
     
-    def __div__(self, other):
-        return self + () * other
+    def __truediv__(self, other):
+
+        res = Marray(children=[self, other])
+        if isinstance(other, (int, float)):
+            #handle scalar
+            cother = ctypes.c_double(other)
+            Marray._C.scale_div_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.c_double]
+            Marray._C.scale_div_marray.restype = ctypes.POINTER(CMarray)
+            data = Marray._C.scale_div_marray(self.marray, cother)
+            res.grad_fn = ScalOfDiv(self, other)
+            res.marray = data
+        else:
+            Marray._C.elem_div_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
+            Marray._C.elem_div_marray.restype = ctypes.POINTER(CMarray)
+            data = Marray._C.elem_div_marray(self.marray, other.marray)
+            res.grad_fn = ElemDiv(self, other)
+            res.marray = data
+        
+        res.shape = self.shape
+        res.ndim = self.ndim
+        return res
     
-    def __rdiv__(self, other):
-        return self.__div__(other)
+    def __rtruediv__(self, other):
+        if isinstance(other, (int, float)):
+            res = other * self**-1
+            res.grad_fn = DivOfScal(self, other)
+            return res
+        raise TypeError("Operand must be a scalar")
+    
+    def __pow__(self, other):
+
+        res = Marray(children=[self, other])
+        if isinstance(other, (int, float)):
+            #handle scalar
+            cother = ctypes.c_double(other)
+            Marray._C.scale_exp_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.c_double]
+            Marray._C.scale_exp_marray.restype = ctypes.POINTER(CMarray)
+            data = Marray._C.scale_exp_marray(self.marray, cother)
+            res.grad_fn = ScalPow(self, other)
+            res.marray = data
+        else:
+            Marray._C.elem_exp_marray.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(CMarray)]
+            Marray._C.elem_exp_marray.restype = ctypes.POINTER(CMarray)
+            data = Marray._C.elem_exp_marray(self.marray, other.marray)
+            res.grad_fn = ElemPow(self, other)
+            res.marray = data
+        
+        res.shape = self.shape
+        res.ndim = self.ndim
+        return res
+    
+    def __rpow__(self, other):
+        if isinstance(other, (int, float)):
+            res = (other * self.ones_like())**self
+            res.grad_fn = PowScal(self, other)
+            return res
+        raise TypeError("Operand must be a scalar")
     
     def __mul__(self, other):
 
@@ -220,6 +295,28 @@ class Marray:
         res.ndim = self.ndim
         return res
     
+    def exp(self):
+        Marray._C.exp_e_marray.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.exp_e_marray.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.exp_e_marray(self.marray)
+        res = Marray(children=[self])
+        res.grad_fn = Exp(self)
+        res.marray = data
+        res.shape = self.shape
+        res.ndim = self.ndim
+        return res
+    
+    def log(self):
+        Marray._C.log_marray.argtypes = [ctypes.POINTER(CMarray)]
+        Marray._C.log_marray.restype = ctypes.POINTER(CMarray)
+        data = Marray._C.log_marray(self.marray)
+        res = Marray(children=[self])
+        res.grad_fn = Log(self)
+        res.marray = data
+        res.shape = self.shape
+        res.ndim = self.ndim
+        return res
+    
     def flatten(self):
 
         def scal_prod(list):
@@ -250,6 +347,10 @@ class Marray:
         return marray
     
     def reshape(self, *shape):
+
+        if len(shape) == 1 and isinstance(shape[0], tuple):
+            shape = shape[0]
+
         cndim = ctypes.c_int(len(shape))
         cshape = (ctypes.c_int * len(shape))(*list(shape).copy())
         Marray._C.reshape.argtypes = [ctypes.POINTER(CMarray), ctypes.POINTER(ctypes.c_int), ctypes.c_int]
@@ -300,29 +401,27 @@ class Marray:
     
     def sum(self):
         Marray._C.sum_marray.argtypes = [ctypes.POINTER(CMarray)]
-        Marray._C.sum_marray.restype = ctypes.POINTER(CMarray)
-        data = Marray._C.sum_marray(self.marray)
-        res = Marray(children=[self])
-        res.marray = data
-        res.shape = self.shape
-        res.ndim = self.ndim
-        return res
+        Marray._C.sum_marray.restype = ctypes.c_double
+        sum_result = Marray._C.sum_marray(self.marray)
+        result_marray = Marray([sum_result])
+        result_marray.grad_fn = Sum(self)
+        return result_marray
+
     
     def backward(self, grad=None):
-        print(f"node: {self}", end=" ")
+
         if not self.req_grad:
             return
         if not grad:
             if self.ndim > 1 or self.shape[0] != 1:
                 raise Exception("need to provide a gradient for non-scalar marrays")
             grad = Marray([1])
-            
+
         if not self.grad:
             self.grad = grad
         else:
             self.grad += grad
         
-        print(f"grad: {self.grad}")
         if not self.grad_fn:
             return
         grads = self.grad_fn.backward(self.grad)

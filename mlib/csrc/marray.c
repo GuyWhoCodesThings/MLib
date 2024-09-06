@@ -7,11 +7,6 @@ static inline double ACCESS_ELEMENT(Marray* marray, int idx) {
     return marray->storage[idx + marray->offset];
 }
 
-// todo:
-// add offset into all calcuations where possible, define constant for it maybe
-// figure out what to do with matmul with higher dimensions
-// *MAKE sure to add prev offset when creating new view with new offset
-
 // helper methods
 void verify_same_shape(Marray* marray1, Marray* marray2) {
     if (marray1->ndim != marray2->ndim) {
@@ -61,7 +56,8 @@ Marray* create_marray(double* storage, int* shape, int ndim) {
 }
 
 Marray* view_marray(Marray* marray, int* indices, int indices_length) {
-
+    // marray ndim, size, storage are correct, only shape is wrong
+    
     int ndim = marray->ndim;
     if (indices_length >= ndim) {
         printf("view must be an marray, use get element instead");
@@ -80,13 +76,13 @@ Marray* view_marray(Marray* marray, int* indices, int indices_length) {
 
     int* shape = (int*)safe_allocate(ndim - indices_length, sizeof(int));
     for (int i = 0; i < ndim - indices_length; i++) {
-     
         shape[i] = marray->shape[i + indices_length];
-    
     }
-    
+   
+
     Marray* res = create_marray(marray->storage, shape, ndim - indices_length);
     res->offset = offset;
+
     return res;
 }
 
@@ -164,6 +160,143 @@ Marray* scale_mul_marray(Marray* marray1, double c) {
     }
     return create_marray(storage, shape, ndim);
 }
+
+Marray* elem_div_marray(Marray* marray1, Marray* marray2) {
+    verify_same_shape(marray1, marray2);
+
+    int size = marray1->size;
+    int ndim = marray1->ndim;
+
+    int* shape = (int*)safe_allocate(ndim, sizeof(int));
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = marray1->shape[i];
+    }
+
+    double* storage = (double*)safe_allocate(size, sizeof(double));
+    for (int i = 0; i < size; i++) {
+        storage[i] = ACCESS_ELEMENT(marray1, i) / ACCESS_ELEMENT(marray2, i);
+    }
+    return create_marray(storage, shape, ndim);
+}
+
+Marray* scale_div_marray(Marray* marray1, double c) {
+    
+    int size = marray1->size;
+    int ndim = marray1->ndim;
+
+    int* shape = (int*)malloc(ndim * sizeof(int));
+    if (shape == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = marray1->shape[i];
+    }
+
+    double* storage = (double*)malloc(size * sizeof(double));
+    if (storage == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < size; i++) {
+        storage[i] = ACCESS_ELEMENT(marray1, i) / c;
+    }
+    return create_marray(storage, shape, ndim);
+}
+
+Marray* elem_exp_marray(Marray* marray1, Marray* marray2) {
+    verify_same_shape(marray1, marray2);
+
+    int size = marray1->size;
+    int ndim = marray1->ndim;
+
+    int* shape = (int*)safe_allocate(ndim, sizeof(int));
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = marray1->shape[i];
+    }
+
+    double* storage = (double*)safe_allocate(size, sizeof(double));
+    for (int i = 0; i < size; i++) {
+        storage[i] = pow(ACCESS_ELEMENT(marray1, i), ACCESS_ELEMENT(marray2, i));
+    }
+    return create_marray(storage, shape, ndim);
+}
+
+Marray* scale_exp_marray(Marray* marray1, double c) {
+    
+    int size = marray1->size;
+    int ndim = marray1->ndim;
+
+    int* shape = (int*)malloc(ndim * sizeof(int));
+    if (shape == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = marray1->shape[i];
+    }
+
+    double* storage = (double*)malloc(size * sizeof(double));
+    if (storage == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < size; i++) {
+        storage[i] = pow(ACCESS_ELEMENT(marray1, i), c);
+    }
+    return create_marray(storage, shape, ndim);
+}
+
+Marray* exp_e_marray(Marray* marray1) {
+    
+    int size = marray1->size;
+    int ndim = marray1->ndim;
+
+    int* shape = (int*)malloc(ndim * sizeof(int));
+    if (shape == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = marray1->shape[i];
+    }
+
+    double* storage = (double*)malloc(size * sizeof(double));
+    if (storage == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < size; i++) {
+        storage[i] = exp(ACCESS_ELEMENT(marray1, i));
+    }
+    return create_marray(storage, shape, ndim);
+}
+
+Marray* log_marray(Marray* marray1) {
+    
+    int size = marray1->size;
+    int ndim = marray1->ndim;
+
+    int* shape = (int*)malloc(ndim * sizeof(int));
+    if (shape == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < ndim; i++) {
+        shape[i] = marray1->shape[i];
+    }
+
+    double* storage = (double*)malloc(size * sizeof(double));
+    if (storage == NULL) {
+        fprintf(stderr, "memory alloc failed\n");
+        exit(1);
+    }
+    for (int i = 0; i < size; i++) {
+        storage[i] = log(ACCESS_ELEMENT(marray1, i));
+    }
+    return create_marray(storage, shape, ndim);
+}
+
 Marray* zeros_like(Marray* marray1) {
     
     int size = marray1->size;
@@ -290,15 +423,22 @@ Marray* reshape(Marray* marray, int* shape, int ndim) {
     for (int i = 0; i < ndim; i++) {
         size *= shape[i];
     }
+
     if (size != marray->size) {
         printf("shape must contain same number of elements after");
         exit(1);
     }
+    int* new_shape = (int*)safe_allocate(ndim, sizeof(int));
+    for (int i = 0; i < ndim; i++) {
+        new_shape[i] = shape[i];
+    }
+
     double* storage = (double*)safe_allocate(size, sizeof(double));
     for (int i = 0; i < size; i++) {
         storage[i] = marray->storage[i];
     }
-    return create_marray(storage, shape, ndim);
+    Marray* res = create_marray(storage, new_shape, ndim);
+    return res;
 }
 
 Marray* zeros(int* shape, int ndim) {
@@ -378,21 +518,6 @@ Marray* eye_marray(int n, int ndim) {
     return eye;
 }
 
-// Marray* diagonal_marray(int , int ndim) {
-//     int size = 1;
-//     for (int i = 0; i < ndim; i++) {
-//         size *= shape[i];
-//     }
-//     double* storage = (double*)safe_allocate(size, sizeof(double));
-//     for (int i = 0; i < size; i++) {
-//         if (i % shape[0] == 0) {
-//             storage[i] = 1;
-//         } else {
-//             storage[i] = 0;
-//         }
-//     }
-//     return create_marray(storage, shape, ndim);
-// }
 
 // getter methods
 double get_item(Marray* marray, int* indices) {
@@ -402,7 +527,7 @@ double get_item(Marray* marray, int* indices) {
         current_index += indices[i] * marray->strides[i];
     }
     if (current_index >= marray->size) {
-        printf("indices out of range");
+        printf("indices out of range getitem %d\n", marray->size);
         exit(1);
     }
     return ACCESS_ELEMENT(marray, current_index);
@@ -423,13 +548,31 @@ void set_item(Marray* marray, int* indices, double item) {
     marray->storage[current_index] = item;  
 }
 
+
 double sum_marray(Marray* marray) {
-    double total = 0;
+    
+    double result = 0;
     for (int i = 0; i < marray->size; i++) {
-        total += marray->storage[i];
+        result += marray->storage[i];
     }
-    return total;
+    return result;
 }
+
+Marray* linespace_marray(double lo, double hi, int samples) {
+    double step_size = (hi - lo) / (double)(samples - 1);
+    double* storage = (double*)safe_allocate(samples, sizeof(double));
+    double current = lo;
+    for (int i = 0; i < samples; i++) {
+        storage[i] = current;
+        current += step_size;
+    }
+    int* shape = (int*)safe_allocate(1, sizeof(int));
+    shape[0] = samples;
+    return create_marray(storage, shape, 1);
+
+}
+
+
 
 double marray_to_item(Marray* marray) {
     if (marray->size != 1) {
@@ -596,4 +739,12 @@ void assert_close(Marray* marray1, Marray* marray2, double precision) {
             exit(1);
         }
     }
+}
+
+void print_marray_shape(Marray* marray) {
+    printf("Marray shape from C: ");
+    for (int i = 0; i < marray->ndim; i++) {
+        printf("%d ", marray->shape[i]);
+    }
+    printf("\n");
 }
