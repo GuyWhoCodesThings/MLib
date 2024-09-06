@@ -1,5 +1,5 @@
 # MLib
-library for linear algebra operations with built in auto differentiation 
+linear algebra library with built in auto differentiation 
 
 credits and resources I used for research:
 
@@ -22,4 +22,4 @@ To build C library, use Makefile by running:
 and you can delete build files using:
 % make clean
 
-To get familiar with the library, go through tutorial.ipynb, which contains examples of basic operations and use cases
+To get familiar with the library, go through tutorial.ipynb, which contains examples of basic operations and use cases. You might need to install matplotlib if not already installed
