@@ -1,10 +1,11 @@
 #include "marray.h"
 
-#define TOL 0.1;
-
 // static functions
 static inline double ACCESS_ELEMENT(Marray* marray, int idx) {
     return marray->storage[idx + marray->offset];
+}
+static inline void SET_ELEMENT(Marray* marray, double item, int idx) {
+    marray->storage[idx + marray->offset] = item;
 }
 
 // helper methods
@@ -545,7 +546,7 @@ void set_item(Marray* marray, int* indices, double item) {
         printf("indices out of range");
         exit(1);
     }
-    marray->storage[current_index] = item;  
+    SET_ELEMENT(marray, item, current_index);
 }
 
 
@@ -613,7 +614,8 @@ Marray* invert_marray(Marray* marray) {
     Marray* tmp_marray = create_marray(tmp_storage, marray->shape, marray->ndim);
     int N = marray->shape[0];
     int* perm_arr = (int*)safe_allocate(N + 1, sizeof(int));
-    int success = lup_decompose(tmp_marray, N, 0.000001, perm_arr);
+    double tolerance = DECOMP_TOLERANCE;
+    int success = lup_decompose(tmp_marray, N, tolerance, perm_arr);
     if (!success) {
         printf("inverse failed");
         exit(1);

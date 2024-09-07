@@ -12,6 +12,8 @@ typedef struct {
    int offset;
 } Marray;
 
+#define DECOMP_TOLERANCE 0.000001f;
+
 void print_marray_shape(Marray* marray);
 
 Marray* create_marray(double* storage, int* shape, int ndim);

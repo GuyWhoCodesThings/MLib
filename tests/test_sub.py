@@ -3,7 +3,7 @@ import mlib
 import mlib.functions
 
 
-class TestTensorOperations(unittest.TestCase):
+class TestSub(unittest.TestCase):
 
     def test_sub_1d(self):
         try:

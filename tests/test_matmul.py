@@ -2,7 +2,7 @@ import unittest
 import mlib
 import mlib.functions
 
-class TestTensorOperations(unittest.TestCase):
+class TestMatmul(unittest.TestCase):
 
     def test_matmul_sm(self):
         try:

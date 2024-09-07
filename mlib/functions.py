@@ -24,7 +24,22 @@ def linespace(lo, hi, num_samples):
     data = Marray._C.linespace_marray(ctypes.c_double(lo), ctypes.c_double(hi), ctypes.c_int(num_samples))
     res = Marray(children=[True], req_grad=False)
     res.marray = data
-    res.shape = [num_samples]
+    res.shape = (num_samples,)
     res.req_grad = False
     res.ndim = 1
+    return res
+
+def eye(dim_length, ndim):
+
+    if (ndim <= 1):
+        raise Exception("ndim must be > 1")
+    
+    Marray._C.eye_marray.argtypes = [ctypes.c_int, ctypes.c_int]
+    Marray._C.eye_marray.restype = ctypes.POINTER(CMarray)
+    data = Marray._C.eye_marray(ctypes.c_int(dim_length), ctypes.c_int(ndim))
+    res = Marray(children=[True], req_grad=False)
+    res.marray = data
+    res.shape = tuple([dim_length] * ndim)
+    res.req_grad = False
+    res.ndim = ndim
     return res

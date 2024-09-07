@@ -124,10 +124,7 @@ class Marray:
             res.marray = data
             res.is_view = True
             res.ndim = self.ndim - len(indices)
-            res.shape = self.shape[len(indices):]
-            # Marray._C.print_marray_shape.argtypes = [ctypes.POINTER(CMarray)]
-            # Marray._C.print_marray_shape.restype = None
-            # Marray._C.print_marray_shape(res.marray)  # Print the shape of self in C
+            res.shape = tuple(self.shape[len(indices):])
             return res
 
         # Handling case where the number of indices matches the number of dimensions

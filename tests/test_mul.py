@@ -3,7 +3,7 @@ import mlib
 import mlib.functions
 
 
-class TestTensorOperations(unittest.TestCase):
+class TestMul(unittest.TestCase):
 
     def test_mul_1d(self):
         try:
@@ -27,5 +27,14 @@ class TestTensorOperations(unittest.TestCase):
             y = 2
             z = mlib.Marray([[[2,4,6]]])
             mlib.functions.assert_close(x * y, z)
+        except:
+            raise
+    def test_grad_mul(self):
+        try:
+            x = mlib.Marray([1])
+            z = x * 2
+            z.backward()
+            grad = mlib.Marray([2])
+            mlib.functions.assert_close(x.grad, grad)
         except:
             raise
