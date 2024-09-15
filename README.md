@@ -22,7 +22,7 @@ To build C library, use Makefile by running:
 and you can delete build files using:
 % make clean
 
-To get familiar with the library, go through tutorial.ipynb, which contains examples of basic operations and use cases. You might need to install matplotlib if not already installed
+To get familiar with the library, go through tutorial.ipynb, which contains examples of basic operations and use cases (ex linear regression). You might need to install matplotlib if not already installed
 
 
 To run tests, use:
