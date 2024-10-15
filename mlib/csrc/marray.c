@@ -1,10 +1,10 @@
 #include "marray.h"
 
 // static functions
-static inline double ACCESS_ELEMENT(Marray* marray, int idx) {
+double ACCESS_ELEMENT(Marray* marray, int idx) {
     return marray->storage[idx + marray->offset];
 }
-static inline void SET_ELEMENT(Marray* marray, double item, int idx) {
+void SET_ELEMENT(Marray* marray, double item, int idx) {
     marray->storage[idx + marray->offset] = item;
 }
 
@@ -22,7 +22,7 @@ void verify_same_shape(Marray* marray1, Marray* marray2) {
     }
 }
 
-void* safe_allocate(int size, int dtype_size) {
+static void* safe_allocate(int size, int dtype_size) {
     void* storage = malloc(size * dtype_size);
     if (storage == NULL) {
         fprintf(stderr, "memory alloc failed\n");
